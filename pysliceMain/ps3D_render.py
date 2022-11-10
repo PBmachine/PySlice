@@ -18,15 +18,30 @@
 # """
 #put in the base template stuff for animations
 # render the lines
-#rendering to make further back stuff less bright - like V is based on y and x value?
-# allow for rotation and stuff
-# uh ye
+#rendering to make further back stuff less bright - could do distance calc or fake it relative to pixel y value - zcoordinate
+
+#http://www.codinglabs.net/article_world_view_projection_matrix.aspx
+# 3D object transforms using 4d vectors- we can set this as [0,0,0,1]
+#[[Xx,Yx,Zx,Tx],[Xy,Yy,Zy,Ty],[Xz,Yz,Zz,Tz],[0,0,0,1]]
+# the x, y and z values change direction and scale of object coordinate system
+# for simple translation use identity matrix for x,y,z and tx,ty,tz for the local xyz origin
+# for everything else t column should be 0,0,0,1
+# simple rotation the axis cell = 1, rest of row, col = 0 and then the relevant sin/cos(angle) for the other two axes
+
+
+
 # """
 
 import math
+import numpy as np
 #https://www.compuphase.com/axometr.htm
 def rad(degree):
     return math.radians(degree)
+
+class trans:
+    def __init__(self):
+        self.theta = 0
+        self.shift = np.zeros((3,1))
 
 class iso(object):
     def __init__(self,angle,origin,scale):

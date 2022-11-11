@@ -14,6 +14,7 @@ from cmu_112_graphics import *
 import psMeshimport as msh
 import ps3D_render as rend
 import numpy
+import os
 
 def getScale(app):
     box = numpy.subtract(testmesh.bbox[0],testmesh.bbox[1])
@@ -93,7 +94,8 @@ def run3DViewer():
 
 #will need to put stl loader in the animation loop
 cone96 = "pysliceMain\\Mesh_Models\\Cone_10x10_96_bin.stl"
-bunny1 = "pysliceMain\\Mesh_Models\\bunny_lowpoly_bin.stl"
+bunny1 = "Mesh_Models\\bunny_lowpoly_bin.stl"
+
 testmesh = msh.openSTL(bunny1)
 print(testmesh.numfacets)
 run3DViewer()

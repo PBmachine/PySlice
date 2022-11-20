@@ -1,22 +1,20 @@
-#################################################
+###################################################
+# Phoebe DeGroot
+# PySlice App MVC v1_01: 20-11-22
 #  ____   __  __   ____   __     __   ____   ______   
 #  == ==  ==  ==  ==  -=  ==     ==  ==  -=  ==   -
 #  ==  =  ==_ ==   -==    ==     ==  ==      ==-=
 #  ====   _  ===  =   ==  ==     ==  ==   =  ==   _
 #  ==      ====    ====   =====  ==   ====   ======  
-#                           
-#Demo 1: use of parametric primitive rather than vertices 
-# Vase style printing (single layer, no infill)
-# extract MVC from this file to new app file
-#
-#################################################
-from cmu_112_graphics import *
+# 
+################################################### 
+# To Do:
+# Extract this functionality from the main file
+#better scaling
+###################################################
 import psMeshimport as msh
 import ps3D_render as rend
-import psApp as app
-import psExport as export
 import numpy
-import os
 
 
 def getScale(app):
@@ -29,9 +27,10 @@ def getScale(app):
         s = abs(.3*app.height/box[2])
     return s
 
+
+
 def appStarted(app):
     app.Ox = app.width/2
-    app.mesh = mesh
     app.Oy = app.height*.77
     app.Cline = "cyan"
     app.Cbg = "black"
@@ -93,14 +92,3 @@ def redrawAll(app, canvas):
 def run3DViewer():
     print('Running 3D viewer ...')
     runApp(width=600, height=600)
-
-#will need to put stl loader in the animation loop
-cone96 = "pysliceMain\\Mesh_Models\\Cone_10x10_96_bin.stl"
-bunny1 = "Mesh_Models\\bunny_lowpoly_bin.stl"
-font = "Mesh_Models\\pyslice_letters_bin.stl"
-axolotl = "Mesh_Models\\Axolotl_lowpoly.stl"
-
-
-testmesh = msh.openSTL(bunny1)
-print(testmesh.numfacets)
-run3DViewer()

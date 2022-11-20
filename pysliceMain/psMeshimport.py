@@ -16,7 +16,6 @@
 # facet class contains normal vector, array of xyz for vertices, bounding box 
 #
 # To Do:
-# !!: check what we might want to do with numpy https://numpy.org/doc/stable/user/quickstart.html 
 # !: write code for sorting, transforming?
 # maybe: alternative parsing for ascii format
 ###################################################
@@ -47,31 +46,28 @@ class Facet(object):
     def __init__(self, normal, v, a):
         #A facet with a normal and three vertices + some other stuff
         self.normal = np.array(normal)
-        self.v = np.array(v)
+        self.v = np.mat(v)
         self.a = a #attributes - may use to label later
         self.bbox = np.zeros((2,3))
     
     def facetPrint(self):
-        print(f'\t Normal:: i:{self.normal[0]}, j:{self.normal[1]}, k:{self.normal[2]}')
-        print(f'\t V0:: {self.printVertex(self.v[0])}')
-        print(f'\t V1:: {self.printVertex(self.v[1])}')
-        print(f'\t V2:: {self.printVertex(self.v[2])}')
+        print(f'Normal: \t')
+        print(self.normal)
+        print('Vertices:')
+        print(self.v)
         
     def printVertex(self,vertex):
         return(f'x:{vertex[0]}, y:{vertex[1]}, z:{vertex[2]}')
 
 
-class Mesh(object): 
-    def __init__(self, fName):
+class Mesh(): 
+    def __init__(self, fName, fInfo):
         self.fName = fName
-        self.header = b'\x00'
-        self.numfacets = 0
-        self.facets =  [] #should probably be an array
+        self.header = fInfo[0]
+        self.numfacets = fInfo[1]
+        self.facets =  [] #should reformat so I can use array
+        self.fcoord = np.zeros((self.numfacets,3,3)) #3d array of all facet coordinates 
         self.bbox = np.zeros((2,3))
-
-    def getInfo(self):
-        self.header = self.fName.read(80)
-        self.numfacets = struct.unpack('I', self.fName.read(4))[0]
     
     def getFacets(self):
         #iterates through num facets and makes facets
@@ -82,12 +78,13 @@ class Mesh(object):
             v2 = rVector(self.fName,'float')
             a = struct.unpack('H', self.fName.read(2))[0]
             self.facets.append(Facet(normal, [v0,v1,v2], a))
+            self.fcoord[i] = np.asmatrix(self.facets[i].v) 
     
     def printFacetInfo(self,lo=0,hi=-1):
         #prints normals and vertices for all facets in mesh or in selected range
         if hi == -1: hi = self.numfacets
         for i in range(lo,hi):
-            print(f'Facet {i}:')
+            print(f'\nFacet {i} -')
             self.facets[i].facetPrint()
 
     def getBBox(self):
@@ -98,8 +95,9 @@ class Mesh(object):
             maxpts = np.amax(facet.v, axis = 0)
             minpts = np.amin(facet.v, axis = 0)
             facet.bbox = [minpts,maxpts]
-            self.bbox[0]=np.minimum(minpts,self.bbox[0])
-            self.bbox[1]=np.maximum(maxpts,self.bbox[1])
+
+        self.bbox[0] = np.amin(self.fcoord,axis = (0,1))
+        self.bbox[1] = np.amax(self.fcoord,axis = (0,1))
 
 
 
@@ -118,6 +116,14 @@ def rVector(fName, vtype):
         c = rFloat(fName)
     return[a,b,c]
 
+def homog(verts):
+    print(f'starting shape:{np.shape(verts)}')
+    
+    new = np.transpose(verts)
+    new = np.append(new,[[1,1,1]], axis = 0)
+    print(f'resulting shape:{np.shape(new)}')
+    return(new)
+
 #https://docs.python.org/3/library/os.html#miscellaneous-system-information
 def checkBinSize(filepath,numfacets):
     facetbytes = 12*4+2
@@ -130,15 +136,19 @@ def checkBinSize(filepath,numfacets):
         print("filesize did not match num facets - check file is in binary STL format")
         return False
 
+def getInfo(myfile):
+        header = myfile.read(80)
+        numfacets = struct.unpack('I', myfile.read(4))[0]
+        return(header,numfacets)
     
-# OPEN STL File
+##>>>>> --------------- OPEN STL File --------------------------------
 def openSTL(filepath):
-    mf = open(filepath, 'rb')  
-    myMesh = Mesh(mf)
-    myMesh.getInfo()
-    if not(checkBinSize(filepath, myMesh.numfacets)):
+    mf = open(filepath, 'rb')
+    info = getInfo(mf)
+    if not(checkBinSize(filepath, info[1])):
         #no handler for ASCII format 
-        return
+        return 
+    myMesh = Mesh(mf,info)
     myMesh.getFacets()
     myMesh.getBBox()
     print('completed parse')

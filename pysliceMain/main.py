@@ -31,7 +31,6 @@ def getScale(app):
 
 def appStarted(app):
     app.Ox = app.width/2
-    app.mesh = mesh
     app.Oy = app.height*.77
     app.Cline = "cyan"
     app.Cbg = "black"

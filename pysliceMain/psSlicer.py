@@ -18,6 +18,7 @@
 import numpy as np
 
 
+
 class slice(object):
     def __init__(self,seq):
         self.seq = seq
@@ -33,6 +34,9 @@ class infill(object):
 class subMesh(object):
     def __init__():
         pass
+
+
+
 
 
 #slicing

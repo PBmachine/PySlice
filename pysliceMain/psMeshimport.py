@@ -28,7 +28,7 @@ class Facet(object):
     def __init__(self, normal, v, a):
         #A facet with a normal and three vertices + 
         self.normal = np.array(normal)
-        self.v = np.mat(v)
+        self.v = np.array(v)
         self.a = a #attributes - unused in standard STL format
         self.bbox = np.zeros((2,3))
     
@@ -43,7 +43,7 @@ class Facet(object):
         minpts = np.amin(self.v, axis = 0)
         self.bbox[0] = minpts
         self.bbox[1] = maxpts
-        print(f' bounding box', self.bbox)
+       
         return self.bbox
         
     def printVertex(self,vertex):
@@ -59,14 +59,15 @@ class Mesh():
         self.bbox = np.zeros((2,3))
         self.dfacets = dict() #all mesh facets stored by key = (zmin,zmax)
         self.lookup = [] #sorted list of facet keys 
+        self.offset = 0.00001
     
     def getFacets(self):
         #iterates through num facets and makes facets
         for i in range(self.numfacets):
             normal = rVector(self.fName,'floatR')
-            v0 = rVector(self.fName,'floatR')
-            v1 = rVector(self.fName,'floatR')
-            v2 = rVector(self.fName,'floatR')
+            v0 = rVector(self.fName,'floatR', self.offset)
+            v1 = rVector(self.fName,'floatR', self.offset)
+            v2 = rVector(self.fName,'floatR', self.offset)
             a = struct.unpack('H', self.fName.read(2))[0]
 
             #create facet and store in dict and matrix
@@ -79,13 +80,12 @@ class Mesh():
         #for non-z slicing need generalization or temporarily rotate model to z plane   
         facet.getbBox()
         l = tuple((facet.bbox[0,2], facet.bbox[1,2]))
-
         if l in self.dfacets: 
             self.dfacets[l] += [facet]
         else:
             self.dfacets[l]=[facet]
 
-    def facetkeyList(self):
+    def facetKeyList(self):
         #creates sorted lookup list by zmin values
         self.lookup = sorted(self.dfacets.keys())
         return self.lookup
@@ -96,25 +96,35 @@ class Mesh():
         for i in range(lo,hi):
             print(f'\nFacet {i} -')
             f = self.nFacet(i)
-            f.facetPrint
-    
-    def nFacet(self,n):
+            f.facetPrint()
+
+    def nFacet(self,n,i=0, count=0):
         #returns the nth facet of the mesh
-        i = 0
-        while i <= n:
-            if i == n:
-                return self.dfacets[self.lookup[i]][0]
-            else: 
-                l = len(self.lookup[i])
-                if i+l>n:
-                    return self.nFacet(n-i)
-                i += l
+        count = 0
+        for i in range(len(self.lookup)):
+            k = self.lookup[i]
+            if count == n:
+                f = self.dfacets[k][0]
+                return f
+            elif count+len(self.dfacets[k])>=n:
+                k = self.lookup[i]
+                f = self.dfacets[k][n-count-1]
+                return f
+            else:
+                count += len(self.dfacets[k])
+
+    
 
     def getBBox(self):
         #find max and min pts
         self.bbox[0] = np.amin(self.fcoord,axis = (0,1))
         self.bbox[1] = np.amax(self.fcoord,axis = (0,1))
         return self.bbox
+    
+    def checkSort(self):
+        if len(self.lookup)<=0:
+            self.facetKeyList()
+        
 
 
 
@@ -124,17 +134,17 @@ def rFloat(fName):
     bytes8 = fName.read(4)
     return struct.unpack('f', bytes8)[0]
 
-def rVector(fName, vtype):
+def rVector(fName, vtype, offset = 0):
     #reads a three values from file to form a point or vector 
     #x,y,z or i,j,k
     if vtype == 'float':
         a = rFloat(fName)
         b = rFloat(fName)
         c = rFloat(fName)
-    elif vtype == 'floatR': #4 dec round to aide future calculations 
-        a = round(rFloat(fName), 4)
-        b = round(rFloat(fName), 4)
-        c = round(rFloat(fName), 4)
+    elif vtype == 'floatR': #4 dec round and add slight offset 
+        a = round(rFloat(fName), 4) + offset
+        b = round(rFloat(fName), 4) + offset
+        c = round(rFloat(fName), 4) + offset
     return[a,b,c]
 
 def homogC(verts):
@@ -180,22 +190,23 @@ def openSTL(filepath):
         return 
     myMesh = Mesh(mf,info)
     myMesh.getFacets()
-    myMesh.facetkeyList()
+    myMesh.facetKeyList()
     myMesh.getBBox()
     print('completed parse')
     return myMesh
 
 ##>>>>> --------------- Additional ------------------------------------------------------------ <<<<<
 
-def testcone():
+def test():
     #test function to check code
-    filepath = "Mesh_Models\\Cone_10x10_96_bin.stl"
+    filepath = "Mesh_Models\\box_12_bin.stl"
     myMesh = openSTL(filepath)
-    myMesh.printFacetInfo(0,1)
+    print("printing facet info")
+    myMesh.printFacetInfo()
     print(f'\nMesh Bounding Box: {myMesh.bbox}')
     F0 = myMesh.nFacet(0).v
-    print(f'homogenized coordinate\n {homogR(F0)}')
-
+    # print(f'homogenized coordinate\n {homogR(F0)}')
+#test()
 #Binary STL format https://docs.fileformat.com/cad/stl/
 # 80 byte header
 # 4 byte u_int number of facets

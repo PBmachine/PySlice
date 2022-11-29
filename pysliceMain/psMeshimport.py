@@ -137,10 +137,20 @@ def rVector(fName, vtype):
         c = round(rFloat(fName), 4)
     return[a,b,c]
 
-def homog(verts):
+def homogC(verts):
+    #column major homogenization
     print(f'starting shape:{np.shape(verts)}')
+    
     new = np.transpose(verts)
     new = np.append(new,[[1,1,1]], axis = 0)
+    new = np.append(new,np.ones((1,3)), axis = 0)
+    print(f'resulting shape:{np.shape(new)}')
+    return(new)
+
+def homogR(verts):
+    #row major homegenization
+    print(f'starting shape:{np.shape(verts)}')
+    new = np.append(verts,np.ones((3,1)),axis=1)
     print(f'resulting shape:{np.shape(new)}')
     return(new)
 
@@ -184,7 +194,7 @@ def testcone():
     myMesh.printFacetInfo(0,1)
     print(f'\nMesh Bounding Box: {myMesh.bbox}')
     F0 = myMesh.nFacet(0).v
-    print(f'homogenized coordinate\n {homog(F0)}')
+    print(f'homogenized coordinate\n {homogR(F0)}')
 
 #Binary STL format https://docs.fileformat.com/cad/stl/
 # 80 byte header

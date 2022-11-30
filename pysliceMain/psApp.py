@@ -95,7 +95,7 @@ def scale4Window(window, bBox):
 
 def appStarted(app):
     #starting mesh
-    app.cMesh = msh.openSTL(default)
+    app.cMesh = defaultmesh
     app.WH = (app.width, app.height)
     meshRender = style("","cyan",1)
     meshBg = style("black","cyan",2)
@@ -163,15 +163,14 @@ def redrawAll(app, canvas):
     
     
     
-def run3DViewer(filepath):
+def run3DViewer(mesh):
     print('Running 3D viewer ...')
-    global default 
-    default = filepath
+    global defaultmesh 
+    defaultmesh = mesh
     runApp(width=800, height=800)
-def setDefault():
-    global default 
 
-bunny1 = "Mesh_Models\\bunny_lowpoly_bin.stl"
-default = bunny1
+
+default = "Mesh_Models\\bunny_lowpoly_bin.stl"
+defaultmesh = msh.openSTL(default)
 
 #test

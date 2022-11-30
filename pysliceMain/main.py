@@ -10,6 +10,8 @@
 #################################################
 import psApp 
 import os
+import psSlicer as slicer
+import psMeshimport as msh
 
 
 
@@ -20,6 +22,9 @@ testbox = "Mesh_Models\\defaultbox_bin.stl"
 sphere = "Mesh_Models\\sphere_10x10_180.stl"
 donut = "Mesh_Models\\donut.stl"
 
-filepath = sphere
+filepath = donut
+mesh = msh.openSTL(filepath)
+h = 0.5
 #test
-psApp.run3DViewer(filepath)
+# psApp.run3DViewer(mesh)
+slicer.slicebyZ(mesh,h)

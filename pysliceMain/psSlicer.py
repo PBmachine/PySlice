@@ -18,32 +18,31 @@
 import numpy as np
 import psMeshimport as msh
 
+
 #almostEqual from 15-112 code
 def almostEqual(d1, d2, epsilon=10**-7):
     # note: use math.isclose() outside 15-112 with Python version 3.5 or later
     return (abs(d2 - d1) < epsilon)
 
 
-"""
-Slice loop
-define a z cutting plane
+# """
+# Slice loop
+# define a z cutting plane
 
-loop - over all facets or facets in range
-find facets that intersect with that plane
+# loop - over all facets or facets in range
+# find facets that intersect with that plane
 
-loop-until all facets cycled through
-calculate the intersection contour
-store the intersection contour as vector in the slice
+# loop-until all facets cycled through
+# calculate the intersection contour
+# store the intersection contour as vector in the slice
 
-loop 
-sort line segment vectors to construct layer contour
-label and store as slice
+# loop 
+# sort line segment vectors to construct layer contour
+# label and store as slice
 
-continue until final z height reached
+# continue until final z height reached
 
-"""
-#plane ax+by+cz+d=0 
-#normal = V1 x V2 
+# """
 
 class slice(object):
     def __init__(self,z):
@@ -63,16 +62,17 @@ class meshslices(object):
         self.slices = []
 
 def slicebyZ(mesh, h):
-    slicedata = meshslices()
-    mesh.checksort() 
-    zmax = mesh.bbox()[1,2]
+    print(f'slicing')
+    data = meshslices()
+    mesh.checkSort() 
+    zmax = mesh.bbox[1,2]
     #offset invoked to avoid slice-vertex intersection
-    zh = mesh.bbox()[0,2]+mesh.offset 
-    sliceAt(mesh,zh)
+    zh = mesh.bbox[0,2]+mesh.offset 
+    data.slices.append(sliceAt(mesh,zh))
     zh = round(zh,4) + h 
     count = 1 
     while zh < zmax:
-        meshslices.append(sliceAt(mesh,zh))
+        data.slices.append(sliceAt(mesh,zh))
         zh += h
         count += 1
     print(f'slicing complete: created {count} slices')
@@ -82,9 +82,9 @@ def sliceAt(mesh,zh):
     #naive search (all facets)
     zslice = slice(zh)
     for n in range(mesh.numfacets):
-        facet = mesh.nFacet
+        facet = mesh.nFacet(n)
         if (facet.bbox[0,2]<zh) and (facet.bbox[1,2]>zh):
-            zslice.segments.append = intersection(facet,zh)
+            zslice.segments.append(intersection(facet,zh))
     return zslice
 
 

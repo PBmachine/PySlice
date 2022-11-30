@@ -49,6 +49,12 @@ class slice(object):
         self.z = z
         self.segments = []
         self.contour = []
+
+    def printsegment(self):
+        for s in self.segments:
+            p1 = round(s[0][0],2), round(s[0][1],2)
+            p2 = round(s[1][0],2), round(s[1][1],2)
+            print(f'{p1}->{p2}')
     
 
 class countour(object):
@@ -60,6 +66,11 @@ class countour(object):
 class meshslices(object):
     def __init__(self):
         self.slices = []
+
+    def printslices(self):
+        for s in self.slices:
+            print(f'Slice: Z: {round(s.z,2)}')
+            s.printsegment()
 
 def slicebyZ(mesh, h):
     print(f'slicing')
@@ -76,6 +87,7 @@ def slicebyZ(mesh, h):
         zh += h
         count += 1
     print(f'slicing complete: created {count} slices')
+    data.printslices()
 
 
 def sliceAt(mesh,zh):

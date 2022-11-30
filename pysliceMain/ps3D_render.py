@@ -8,15 +8,11 @@
 #  ==      ====    ====   =====  ==   ====   ======  
 # 
 ###################################################                     
-# Function:
-# 
-#
-# To Do:
 # 
 ###################################################
 
-# """
-#put in the base template stuff for animations
+#reorg iso class
+# 
 # render the lines
 #rendering to make further back stuff less bright - could do distance calc or fake it relative to pixel y value - zcoordinate
 
@@ -42,21 +38,16 @@ class trans:
     def __init__(self):
         self.theta = 0
         self.shift = np.zeros((3,1))
+        
+def isoprojXY(pt, o, scale, a=27):
+    a = math.radians(a)
+    x = pt[0]*scale
+    y = pt[1]*scale
+    z = pt[2]*scale
+    xP = o[0]+x*math.cos(a)-y*math.cos(a)
+    yP = o[1]- x*math.sin(a) - y*math.sin(a) - z
+    return([xP,yP])
 
-class iso(object):
-    def __init__(self,angle,origin,scale):
-        self.a = math.radians(angle)
-        self.o = origin
-        self.scale = scale
-        
-        
-    def isoXY(self,pt):
-        x = pt[0]*self.scale
-        y = pt[1]*self.scale
-        z = pt[2]*self.scale
-        xP = self.o[0]+x*math.cos(self.a)-y*math.cos(self.a)
-        yP = self.o[1]- x*math.sin(self.a) - y*math.sin(self.a) - z
-        return([xP,yP])
 
 
 
@@ -73,6 +64,41 @@ def dimXY(v,ox,oy,scale):
     yP += oy
     return [xP,yP]
 
+
+def dimBBOX(Pmin,Pmax,scale=1,a = 27):
+    #gets the w and h of object in current projection
+    #use scale = 1 to get overall dims to set view scale
+    #delta = Pmax - Pmin #for numpy arrays 
+    a = math.radians(a)
+    dX = round(Pmax[0]-Pmin[0],1)
+    dY = round(Pmax[1]-Pmin[1],1)
+    dZ = round(Pmax[2]-Pmin[2],1)
+    
+
+
+    w = abs((dX*math.cos(a)+dY*math.cos(a))) * scale
+    h = abs((dX*math.sin(a)+dY*math.sin(a)+dZ)) * scale
+    hmin = ((0-Pmin[0])*math.sin(a)+(0-Pmin[1])*math.sin(a)+0-Pmin[2])
+
+    oratio = (dY*math.cos(a)/w)
+    return (w,h,oratio,hmin)
+
+def dimBBOX(Pmin,Pmax,scale=1,a = 27):
+    #gets the w and h of object in current projection
+    #use scale = 1 to get overall dims to set view scale
+    #delta = Pmax - Pmin #for numpy arrays 
+    a = math.radians(a)
+    dX = round(Pmax[0]-Pmin[0],1)
+    dY = round(Pmax[1]-Pmin[1],1)
+    dZ = round(Pmax[2]-Pmin[2],1)
+    print(f'dx = {dX}, dy = {dY}, dz = {dZ}')
+
+    w = abs((dX*math.cos(a)+dY*math.cos(a))) * scale
+    h = abs((dX*math.sin(a)+dY*math.sin(a)+dZ)) * scale
+    print(f'width={w}, height = {h}')
+
+    oratio = (dY*math.cos(a)/w)
+    return (w,h,oratio)
 # OLD
 # def isoXY(v,ox,oy,scale):
 #     #isometric projection of xyz coord to x,y coord

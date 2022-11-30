@@ -97,7 +97,7 @@ cone96 = "Mesh_Models\\Cone_10x10_96_bin.stl"
 bunny1 = "Mesh_Models\\bunny_lowpoly_bin.stl"
 font = "Mesh_Models\\pyslice_letters_bin.stl"
 axolotl = "Mesh_Models\\Axolotl_lowpoly.stl"
-textbox = "Mesh_Models\\box_12_bin.stl"
+testbox = "Mesh_Models\\box_12_bin.stl"
 
 
 testmesh = msh.openSTL(bunny1)

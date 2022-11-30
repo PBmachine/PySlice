@@ -64,6 +64,12 @@ def slicebyZ(mesh, h):
 def sliceAt(mesh,zh):
     #check facet group
 
+    for f in facets: 
+        if zmin(f)<zh and zmax(f)>zh:
+            for facet in mesh.dfacets:
+                pass
+            segment = intersection[f]
+
     #iterate through facets in group 
     # if fzmin<zh< fzmax calculate intersection
     # add to slice lines
@@ -107,7 +113,7 @@ def intersection(facet, zh):
 class slice(object):
     def __init__(self,z):
         self.z = z
-        self.points = np.array()
+        self.segments = []
         self.contour = []
     
 
@@ -116,14 +122,10 @@ class countour(object):
         self.points = []
         self.type = ''
 
-class infill(object):
-    #infill is not included in this version
-    pass
-       
+class meshslices(object):
+    def __init__(self):
+        self.slices = []
 
-class subMesh(object):
-    def __init__():
-        pass
 
 
 def test():

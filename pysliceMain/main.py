@@ -13,8 +13,9 @@ import os
 import psMeshimport as msh
 
 
-h = 0.5
 #test
 #n to load next mesh
 #m to slice
+#c to clear slice view
+#h to adjust slice height parameter 
 psApp.run3DViewer()

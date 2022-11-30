@@ -73,7 +73,6 @@ class meshslices(object):
             s.printsegment()
 
 def slicebyZ(mesh, h):
-    print(f'slicing')
     data = meshslices()
     mesh.checkSort() 
     zmax = mesh.bbox[1,2]

@@ -129,7 +129,7 @@ def keyPressed(app, event):
     elif (event.key in ['Down', 'Left']):
         print("No function yet!")
     elif event.key == 'm':
-        print("run slicer")
+        print(f"run slicer at constant height:{app.param.h}")
         app.meshslices = sliceMesh(app.cMesh,app.param.h)
         app.slicerender = True
     elif event.key == 'c':
@@ -146,6 +146,7 @@ def keyPressed(app, event):
         app.param.h += .25
         if app.param.h >1.5:
             app.param.h = .25
+        print(f'slice height = {app.param.h}')
 
 def drawCircle(app,canvas,x0,y0,r,style):
     #helper fn from hw3- draws circle on center x0,y0 with radius r

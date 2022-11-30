@@ -87,7 +87,7 @@ def slicebyZ(mesh, h):
         zh += h
         count += 1
     print(f'slicing complete: created {count} slices')
-    data.printslices()
+    return data
 
 
 def sliceAt(mesh,zh):

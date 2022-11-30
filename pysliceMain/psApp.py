@@ -163,15 +163,15 @@ def redrawAll(app, canvas):
     
     
     
-def run3DViewer():
+def run3DViewer(filepath):
     print('Running 3D viewer ...')
+    global default 
+    default = filepath
     runApp(width=800, height=800)
+def setDefault():
+    global default 
 
-cone96 = "Mesh_Models\\Cone_10x10_96_bin.stl"
 bunny1 = "Mesh_Models\\bunny_lowpoly_bin.stl"
-font = "Mesh_Models\\pyslice_letters_bin.stl"
-anglebox = "Mesh_Models\\box_12_bin.stl"
-testbox = "Mesh_Models\\defaultbox_bin.stl"
 default = bunny1
+
 #test
-run3DViewer()

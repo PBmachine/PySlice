@@ -45,8 +45,25 @@ continue until final z height reached
 #plane ax+by+cz+d=0 
 #normal = V1 x V2 
 
+class slice(object):
+    def __init__(self,z):
+        self.z = z
+        self.segments = []
+        self.contour = []
+    
+
+class countour(object):
+    def __init__(self):
+        
+        self.points = []
+        self.type = ''
+
+class meshslices(object):
+    def __init__(self):
+        self.slices = []
 
 def slicebyZ(mesh, h):
+    slicedata = meshslices()
     mesh.checksort() 
     zmax = mesh.bbox()[1,2]
     #offset invoked to avoid slice-vertex intersection
@@ -55,28 +72,31 @@ def slicebyZ(mesh, h):
     zh = round(zh,4) + h 
     count = 1 
     while zh < zmax:
-        sliceAt(mesh,zh)
+        meshslices.append(sliceAt(mesh,zh))
         zh += h
         count += 1
     print(f'slicing complete: created {count} slices')
 
 
 def sliceAt(mesh,zh):
-    #check facet group
+    #naive search (all facets)
+    zslice = slice(zh)
+    for n in range(mesh.numfacets):
+        facet = mesh.nFacet
+        if (facet.bbox[0,2]<zh) and (facet.bbox[1,2]>zh):
+            zslice.segments.append = intersection(facet,zh)
+    return zslice
 
-    for f in facets: 
-        if zmin(f)<zh and zmax(f)>zh:
-            for facet in mesh.dfacets:
-                pass
-            segment = intersection[f]
+
+    # for f in facets: 
+    #     if zmin(f)<zh and zmax(f)>zh:
+    #         for facet in mesh.dfacets:
+    #             pass
+    #         segment = intersection[f]
 
     #iterate through facets in group 
-    # if fzmin<zh< fzmax calculate intersection
-    # add to slice lines
-
     # if at end create contour and return
 
-    pass
 
 def intersection(facet, zh):
     #calculating the intersection of triangle facet and z aligned plane
@@ -110,22 +130,6 @@ def intersection(facet, zh):
 
 
 
-class slice(object):
-    def __init__(self,z):
-        self.z = z
-        self.segments = []
-        self.contour = []
-    
-
-class countour(object):
-    def __init__(self):
-        self.points = []
-        self.type = ''
-
-class meshslices(object):
-    def __init__(self):
-        self.slices = []
-
 
 
 def test():
@@ -134,7 +138,6 @@ def test():
     F1 = testMesh.nFacet(1)
     line1 = intersection(F1,1.5)
 
-test()
 
 #slicing
 #find intersecting facets

@@ -20,9 +20,11 @@ class window(object):
         self.ext = ext
         self.style = style
         self.margin = margin
-        self.objs = []
-        
+        self.objs = dict()
 
+    def dims(self):
+        return(self.ext[0]-self.origin[0],self.ext[1]-self.origin[1])
+        
     def draw(self, canvas, drawobjs = True):
         style = self.style
         canvas.create_rectangle(self.origin[0],self.origin[1],
@@ -31,26 +33,58 @@ class window(object):
         #draw all objects in the window
         if drawobjs: self.drawobjs(canvas)
 
+    def reScale(self,scale):
+        for n in range(2):
+            self.origin[n] *= scale[n]
+            self.ext[n] *= scale[n]
+
     def drawobjs(self,canvas):
-        for obj in self.objs:
-            obj.draw(canvas)
+        for key in self.objs:
+            self.objs[key].draw(canvas)
+
 
 ##>>style-----------------------------------
+#palette
+p= {"HotPink":"#f652a0","TiffanyBlue":"#bcece0",
+"Cyan":"#36eee0","CyanDk":"#00A3A3","CyanLt":"#8AFFFF",
+"CoralLt":"#ff9b69","Coral":"#f07143", "CoralDk":'#c4533d'}
+
+def defaultStyles():
+    styles = dict()
+    styles["meshWindow"] = style("black",p['Cyan'],5)
+    styles["slice"] = style("","green2",1)
+    styles["mesh"] = style(p['CyanDk'],p['CyanDk'],1,["gray25",""])
+    styles["grid"] = style("","SlateGray4",1,["gray50","gray50"])
+    styles["uiWindow"] = style("black","cyan",5)
+    styles["button1"] = style(p["Coral"],p["CoralLt"],2,["",""],c="black",a="center",font= ('Lucida Sans Typewriter','12',"bold"))
+    styles["button2"] = style("MediumOrchid3","DeepPink3",2,["",""],c="black",a="center",font= ('Lucida Sans Typewriter','12','normal'))
+    styles["button3"] = style(p["Coral"],p["CoralLt"],2,["",""],c="black",a="center",font= ('Lucida Sans Typewriter','12','normal'))
+    return styles
+
 class style(object):
-    def __init__(self,fillc,linec,lineweight, smooth = 0, stipple = "", linestipple = "",
-    fontc = "white", anchor = "CENTER", font = ('Consolas','12')):
+    def __init__(self,fillc,linec,lineweight, stipple = ["",""], **text ):
         self.fc = fillc
         self.lc = linec
         self.lw = lineweight
-        self.smooth = smooth
-        self.stipple = stipple
-        self.lstipple = linestipple
-        self.fontc = fontc
-        self.anchor = anchor
-        self.font = font
+        self.smooth = 0
+        self.stipple, self.lstipple = stipple[0],stipple[1]
+        self.tc,self.anchor,self.font = self.setFont(text)
+    
+    def setFont(self,text):
+        default = ("black","CENTER",('Consolas','12'))
+        if len(text)<=0 or text['c']=="":
+            tc = "black"
+            anchor = "CENTER"
+            font = ('Consolas','12')
+        else:
+            tc = text['c']
+            anchor = text['a']
+            font = text['font']
+        return(tc,anchor,font)
+
 
 class UIobj(object):
-    def __init__(self, name, window, origin,style, dims = [], **tags):
+    def __init__(self, name, window, origin,style, dims = [], *tags):
         self.name = name
         self.origin =[origin[0] + window.origin[0],origin[1] + window.origin[1]]
         self.window = window
@@ -66,27 +100,41 @@ class UIobj(object):
             objx1 = objx0+self.dims[0]
             objy1 = objy0+self.dims[1]
             return([[objx0,objy0],[objx1,objy1]])
-        
+
+    def reScale(self,scale):
+        for n in range(2):
+            self.origin[n] *= scale[n]
+            self.dims[n] *= scale[n]
+        self.resizeFont()
+
 
 ##>>button-----------------------------------
-class button(object):
+class button(UIobj):
     def __init__(self, name, window, origin, dims, event,
      style, text = "", **tags):
-        super().__init__(name, window, origin, style, dims, tags)
+        super().__init__(name, window, origin, style, dims)
         self.state = 1 #1 or -1 for up and down, 0 for inactive
         self.text = text
         self.clickEvents = [event]
         self.resizeFont()
         self.bounds = self.getBounds()
 
+
     def resizeFont(self):
         #autoresize font to button height
-        yheight = (self.dims[1]*.8)//1
-        self.style.font[1] = yheight
+        aspect = self.dims[0]/self.dims[1]/10
+        yheight = int((self.dims[1]*aspect)//1)
+        font = self.style.font
+        if len(font)>=2:
+            self.style.font = (font[0],yheight,font[2])
+        else:
+            self.style.font = (font[0],yheight)
 
     def inBounds(self,pt):
-        bounds= self.bounds
-        if (bounds[1][0]-pt[0]>bounds[0][0]) and (bounds[1][1]-pt[1]>bounds[0][1]):
+        o = self.origin
+        ext = [self.origin[0]+self.dims[0],self.origin[1]+self.dims[1]]
+        if ((pt[0]>o[0]) and (pt[0]<ext[0])) and ((pt[1]>o[1]) and (pt[1]<ext[1])):
+            print(f'{self.name} pressed')
             return True
         else:
             return False
@@ -108,30 +156,29 @@ class button(object):
 
     def draw(self,canvas):
         style = self.style
+        ext = [self.origin[0]+self.dims[0],self.origin[1]+self.dims[1]]
 
         if self.state ==0:
             stipple = "gray25"
-            outline = "grey"
-            lstipple = stipple
+            outlinec = "black"
+            lstipple = "gray25"
         else:
             stipple = style.stipple
             outlinec = style.lc
             lstipple = style.lstipple
 
         canvas.create_rectangle(self.origin[0],self.origin[1],
-        self.dims[0],self.dims[1], outline = outlinec, width = style.lw, 
-        fill = style.fc, stipple = stip, outlinestipple = lstipple)
+        ext[0],ext[1], outline = outlinec, width = style.lw, 
+        fill = style.fc, stipple = stipple, outlinestipple = lstipple)
 
-        if len(self.text>0):
-            center = [self.dims[0]-self.origin[0]/2,self.dims[1]-self.origin[1]/2]
+        if len(self.text)>0:
+            center = [self.dims[0]/2+self.origin[0],self.dims[1]/2+self.origin[1]]
             canvas.create_text(center[0],center[1], text = self.text, 
-            fill = style.fontc, font = style.font)
+            fill = style.tc, font = style.font)
 
-##>methods------------------------------------------------------------
-def defaultStyles():
-    styles = dict()
-    styles["meshWindow"] = style("black","cyan",5)
-    styles["slice"] = style("","green2",1)
-    styles["mesh"] = style("cyan4","cyan3",1,stipple = "gray25")
-    styles["uiWindow"] = style("black","cyan",5)
-    return styles
+
+def drawCircle(app,canvas,x0,y0,r,style):
+    #helper fn from hw3- draws circle on center x0,y0 with radius r
+    canvas.create_oval(x0-r, y0-r, x0+r, y0+r, 
+    fill = style.f, outline = style.l, width = style.w)
+

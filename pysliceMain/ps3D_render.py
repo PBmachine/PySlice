@@ -30,14 +30,35 @@
 
 import math
 import numpy as np
+import UIWidgets as ui
+
 #https://www.compuphase.com/axometr.htm
 def rad(degree):
     return math.radians(degree)
 
 class trans:
     def __init__(self):
-        self.theta = 0
+        self.theta = [0,0,0]
         self.shift = np.zeros((3,1))
+    
+    def rot(self, pt):
+        #just gimbal, thanks
+        Rx = np.array[[1,0,0],
+        [0,math.cos(theta[0]),-1*math.sin(theta[0])],
+        [0,math.sin(theta[0]),math.cos(theta[0])]]
+
+        Ry= np.array[[math.cos(theta[1]),0,math.sin(theta[1])],
+        [0,1,0],
+        [-1*math.sin(theta[1]),0,math.cos(theta[1])]]
+
+        Rz = np.array[[math.cos(theta[2]),-1*math.sin(theta[2]),0],
+        [math.sin(theta[2]),math.cos(theta[2]),0],
+        [0,0,1]]
+
+        pt3d = np.reshape(pt,(3,1))
+        newpt = pt3d*Rz
+        return(newpt)
+
         
 def isoprojXY(pt, o, scale, a=27):
     a = math.radians(a)
@@ -49,14 +70,14 @@ def isoprojXY(pt, o, scale, a=27):
     return([xP,yP])
 
 
-class isoObj(object):
+class isoRender(object):
     def __init__(self,window,origin,style,scale = 1):
         self.window = window
         self.o = origin #XY origin
         self.scale = scale
         self.style = style
-        self.objs = []
         self.a = math.radians(27)
+        self.objs=[]
 
     def projXY(self,pt):
         a = self.a
@@ -66,6 +87,26 @@ class isoObj(object):
         xP = self.o[0]+x*math.cos(a)-y*math.cos(a)
         yP = self.o[1]- x*math.sin(a) - y*math.sin(a) - z
         return([xP,yP])
+
+    def extBBox(self,bbox):
+        
+        ymin = self.projXY(bbox[0])[1]
+        ymax = self.projXY(bbox[1])[1]
+   
+        xmin = self.projXY((bbox[0][0],bbox[1][1],bbox[0][0]))[0]
+        xmax = self.projXY((bbox[1][0],bbox[0][1],bbox[0][0]))[0]
+        w = np.array([[xmin,ymin],[xmax,ymax]])
+        
+        return(w)
+    
+    def scale2BBox(self,bbox,scale=0):
+        window = self.window
+        if scale == 0: scale = self.scale
+        BBox = self.extBBox(bbox)
+        w,h = abs(BBox[1][0]-self.o[0]),abs(BBox[1][1]-self.o[1])
+        oratio = self.o[1]-BBox[0][0]
+        wmin,hmin = abs(BBox[0][0]-self.o[0]),abs(BBox[0][1]-self.o[1])
+        return(w,h,wmin,hmin,oratio)
 
     def gdimBBOX(self,Pmin,Pmax,scale=1):
         if scale == 0: scale = self.scale
@@ -82,15 +123,95 @@ class isoObj(object):
 
         return (w,h,wmin,hmin,oratio)
 
+    def draw(self, canvas):
+        return
+
+class obj3D(object):
+    def __init__(self,isoRender,style, rescale = True, render = True):
+        self.isoRender = isoRender
+        if self not in isoRender.objs:
+            isoRender.objs.append(self)
+        self.style = style
+        self.rescale = rescale
+        self.render = render
+
+class meshObj(obj3D):
+    def __init__(self,isoRender,mesh,style, rescale = True, render = True):
+        super().__init__(isoRender,style,rescale, render)      
+        self.mesh= mesh
+
+    def draw(self,canvas):
+        if self.render == False:
+            return
+        mesh = self.mesh
+        for i in range(mesh.numfacets):
+            face = mesh.nFacet(i).v
+            pts = np.zeros((3,2))
+            for n in range(3):
+                pts[n] = self.isoRender.projXY(face[n])
+            self.drawTriangle(canvas,pts, self.style)
+
+    def drawTriangle(self,canvas,pt, style):
+        canvas.create_polygon(pt[0][0], pt[0][1], 
+        pt[1][0], pt[1][1], pt[2][0], pt[2][1],
+        outline = style.lc, width = style.lw, fill = style.fc, 
+        stipple = style.stipple)
+    
+
+class lineObj(obj3D):
+    #3D object defined by line segments - such as slices
+    def __init__(self,isoRender,lines,style, rescale = True, render = True):
+        super().__init__(isoRender,style,rescale, render)      
+        self.lines= lines
+
+    def draw(self,canvas):
+        if self.render == False:
+            return
+        for n in range(len(self.lines)):
+            segment = self.lines[n]
+            self.drawSegment(canvas,segment)
+
+    def checkSegment(self):
+        pass
+
+    def drawSegment(self,canvas, segment):
+        p1 = segment[0]
+        p2 = segment[1]
+        pts = np.zeros((3,2))
+
+        pts[0] = self.isoRender.projXY(p1)
+        pts[1] = self.isoRender.projXY(p2)
+
+
+        self.drawLine(canvas,pts, self.style)
+
+    def drawLine(self,canvas,pts,style):
+        canvas.create_line(pts[0][0],pts[0][1],pts[1][0],pts[1][1], 
+        fill = style.lc, width = style.lw, stipple = style.lstipple)
+
+class sliceObj(lineObj):
+    def draw(self,canvas):
+        if self.render == False:
+            return
+        for slice in self.lines:
+            for segment in slice.segments:
+                self.drawSegment(canvas,segment)
+
 
 def scale4Window(bbox, isoObj):
     #given window object and mesh bbox find scale and fit to window
     window = isoObj.window
-    Mw, Mh, wmin,hmin,wratio = isoObj.gdimBBOX(bbox[0], bbox[1],scale = 1)
-    
+    Mw, Mh, wmin,hmin,wratio = isoObj.gdimBBOX(bbox[0],bbox[1],scale = 1)
+    # print(f'M:{Mw},{Mh},min:{wmin},{hmin}')
+    #Mw, Mh, wmin,hmin,wratio = isoObj.scale2BBox(bbox,scale = 1)
 
-    Wh = (window.ext[1]-window.origin[1])-window.margin
-    Ww = (window.ext[0]-window.origin[0])-window.margin
+    # wdims = window.dims()
+
+
+    Wh = (window.ext[1]-window.origin[1])-window.margin*4
+    Ww = (window.ext[0]-window.origin[0])-window.margin*4
+    # print(f'M:{Mw},{Mh},min:{wmin},{hmin}')
+
     if (Mh/Wh >= Mw/Ww):
         #set by height
         scale = Wh/Mh
@@ -107,16 +228,21 @@ def scale4Window(bbox, isoObj):
 
     
 
+def createOgrid(window,isoView,style,ext):
+    segments = []
+    w = ext
+    for n in range(w):
+        for m in range(-w+1,w):
+            if m == 0:m=.1
+            row = [[-n,m,0],[n,m,0]]
+            col = [[m,-n,0],[m,n,0]]
+            segments.append(row)
+            segments.append(col)
+    grid = lineObj(isoView,segments,style)
+    window.objs["grid"] = grid
 
+    return grid
 
-
-# def dimXY(v,ox,oy,scale):
-#     #dimetric projection of xyz coord to x,y coord
-#     xP = (v[0]*math.cos(rad(7))+(v[1]*math.cos(rad(42)))/2) * scale
-#     yP = (v[1]+(v[1]*math.sin(rad(42)))/2-v[0]*math.sin(rad(7))) * scale
-#     xP += ox
-#     yP += oy
-#     return [xP,yP]
 
 
 # def dimBBOX(Pmin,Pmax,scale=1,a = 27):

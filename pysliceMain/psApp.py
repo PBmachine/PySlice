@@ -35,42 +35,74 @@ def setWindows(app):
     app.window = dict()
     app.renderWindow= ui.window([10,10],[app.width*1-10,app.height*hb],
     app.styles["meshWindow"], 10)
-    app.uiWindow = ui.window([10,app.height*hb], [app.width*1-10,app.height],
+    app.uiWindow = ui.window([10,app.height*hb], [app.width*1-10,app.height-10],
     app.styles["uiWindow"], 10)
 
     rbox = app.renderWindow
     rx = (rbox.ext[0]-rbox.origin[0])//2
     ry = (rbox.origin[1]+rbox.ext[1]-rbox.origin[1])*.75
-    app.meshView = rnd.isoObj(app.renderWindow,[rx,ry],app.styles["mesh"])
-    app.renderWindow.objs.append(app.meshView)
+    app.meshView = rnd.isoRender(app.renderWindow,[rx,ry],app.styles["mesh"])
+
+    app.grid = rnd.createOgrid(app.renderWindow, app.meshView, app.styles["grid"],5)
 
 
+
+def createButtons(app):
+    style = app.styles["button1"]
+    app.buttons=dict()
+    app.buttons[sliceMesh] = ui.button(sliceMesh,app.uiWindow, [10,10],[250,50],
+    sliceMesh,style,"SLICE MESH")
+    app.buttons["loadNext"] = ui.button("loadNext",app.uiWindow, [10,70],[250,50],
+    loadnextmesh,style,"LD NEXT MESH")
+    app.buttons["export"] = ui.button("export",app.uiWindow, [10,70+60],[250,50],
+    loadnextmesh,style,"EXPORT")
+    #deactivate until slices made
+    app.buttons["export"].state = 0
+    
+    
+    for key in app.buttons:
+        app.uiWindow.objs[app.buttons[key].name] = app.buttons[key]
+
+def export(app):
+    pass
 def appStarted(app):
     #starting mesh
     app.meshnum = 0
     app.WH = (app.width, app.height)
-    app.slicerender = False
     app.styles = ui.defaultStyles()
     setWindows(app)
-    loadMesh(app,allmeshfiles[app.meshnum])
+    app.sliced = False
+    createButtons(app)
+    loadMesh(app,allmeshfiles[app.meshnum],False)
     app.Cbg = "black"
     app.param = sliceparam(.25)
 
-def loadMesh(app,meshfile):
+def loadMesh(app,meshfile,started = True):
     print(f'Loading {meshfile.name} mesh')
+    style = app.styles["mesh"]
     app.cMesh = msh.openSTL(meshfile.filepath)
-    app.meshView.objs.append(app.cMesh)
+    cMesh = rnd.meshObj(app.meshView,app.cMesh,style)
+    app.renderWindow.objs["mesh"]=cMesh
     rnd.scale4Window(app.cMesh.bbox,app.meshView)
 
 def reScale(app):
     scale =[app.width/app.WH[0],app.height/app.WH[1]]
-    app.renderWindow.ext[0] = app.width-10
-    app.renderWindow.ext[1] *=scale[1]
-    app.uiWindow.origin[0] = app.width-10
-    app.uiWindow.origin[1] *= scale[1]
+    app.renderWindow.reScale(scale)
+    app.uiWindow.reScale(scale)
     rnd.scale4Window(app.cMesh.bbox,app.meshView)
+    for key in app.uiWindow.objs:
+        app.uiWindow.objs[key].reScale(scale)
+        # obj.origin[1] *= scale[1]
     app.WH = (app.width,app.height)
 
+def loadnextmesh(app):
+    if app.sliced:
+        app.slicerender.render = False
+    app.meshnum += 1
+    if app.meshnum >= len(allmeshfiles):
+        app.meshnum = 0
+    loadMesh(app,allmeshfiles[app.meshnum])
+    app.buttons["export"].state = 0
 
 def keyPressed(app, event):
     if event.key in ['Up', 'Right']:
@@ -79,18 +111,14 @@ def keyPressed(app, event):
         print("No function yet!")
     elif event.key == 'm':
         print(f"run slicer at constant height:{app.param.h}")
-        app.meshslices = sliceMesh(app.cMesh,app.param.h)
-        app.slicerender = True
+        sliceMesh(app)
     elif event.key == 'c':
-        print("clear slicer")
-        app.slicerender = False
+        print("show/hide slicer")
+        app.slicerender.render =  not app.slicerender.render
     elif event.key == 'n':
         #load next mesh
-        app.slicerender = False
-        app.meshnum += 1
-        if app.meshnum >= len(allmeshfiles):
-            app.meshnum = 0
-        loadMesh(app,allmeshfiles[app.meshnum])
+        loadnextmesh(app)
+
     elif event.key == 'h':
         #change h by .25 increments
         app.param.h += .25
@@ -98,54 +126,18 @@ def keyPressed(app, event):
             app.param.h = .25
         print(f'slice height = {app.param.h}')
 
-def drawCircle(app,canvas,x0,y0,r,style):
-    #helper fn from hw3- draws circle on center x0,y0 with radius r
-    canvas.create_oval(x0-r, y0-r, x0+r, y0+r, 
-    fill = style.f, outline = style.l, width = style.w)
-
-def drawLine(canvas,pts,style):
-    canvas.create_line(pts[0][0],pts[0][1],pts[1][0],pts[1][1], fill = style.lc, width = style.lw)
-
-def drawGrid(app,canvas):
-    #use this to draw the base grid, major axes and origin
-    pass
-    # for r in range(len(app.board)):
-    #     for c in range(len(app.board[0])):
-    #         drawCell(app,canvas, r, c, app.board[r][c])
-    
-
-def drawTriangle(canvas,pt, style):
-    canvas.create_polygon(pt[0][0], pt[0][1], 
-    pt[1][0], pt[1][1], pt[2][0], pt[2][1],
-    outline = style.lc, width = style.lw, fill = style.fc, 
-    stipple = style.stipple)
-
-def drawFacets(app,canvas,mesh, isoView):
-    for i in range(mesh.numfacets):
-        face = mesh.nFacet(i).v
-        pts = numpy.zeros((3,2))
-        for n in range(3):
-            pts[n] = isoView.projXY(face[n])
-        drawTriangle(canvas,pts, app.styles["mesh"])
-
-def drawMesh(app,canvas):
-    #drawMeshbackground
+def mouseReleased(app, event):
+    print(f'mouseReleased at {(event.x, event.y)}')
+    buttons = app.buttons
+    pt = (event.x, event.y)
+    for key in buttons:
+        result = buttons[key].isPressed(pt)
+        if result is not None:
+            print(f'')
+            for n in range(len(result)):
+                result[n](app)
 
 
-    app.renderWindow.draw(canvas,False)
-    drawFacets(app, canvas, app.cMesh, app.meshView)
-
-def drawSlices(app,canvas,isoView):
-    style = app.styles["slice"]
-    for slice in app.meshslices.slices:
-        for segment in slice.segments:
-            p1 = segment[0]
-            p2 = segment[1]
-            pts = numpy.zeros((3,2))
-
-            pts[0] = isoView.projXY(p1)
-            pts[1] = isoView.projXY(p2)
-            drawLine(canvas,pts, style)
 
 def drawBackground(app,canvas):
     canvas.create_rectangle(0,0,app.width,app.height, fill = app.Cbg)
@@ -155,13 +147,20 @@ def redrawAll(app, canvas):
         reScale(app)
         app.WH = (app.width,app.height)
     drawBackground(app, canvas)
-    drawMesh(app,canvas)
-    if app.slicerender == True:
-        drawSlices(app,canvas,app.meshView)
+    app.renderWindow.draw(canvas)
+    app.uiWindow.draw(canvas)
+    app.grid.print = False
     
-def sliceMesh(mesh,zh):
-    data = slicer.slicebyZ(mesh,zh)
-    return data
+    
+    
+def sliceMesh(app):
+    app.buttons["export"].state = 0
+    app.meshslices = slicer.slicebyZ(app.cMesh,app.param.h)
+    style = app.styles["slice"]
+    app.slicerender = rnd.sliceObj(app.meshView,app.meshslices.slices,style)
+    app.renderWindow.objs["slices"]=app.slicerender
+    app.sliced = True
+    app.buttons["export"].state = 1
 
     
 def run3DViewer():

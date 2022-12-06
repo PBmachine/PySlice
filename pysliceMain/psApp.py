@@ -33,9 +33,9 @@ class sliceparam(object):
 def setWindows(app):
     hb = .75
     app.window = dict()
-    app.renderWindow= ui.window([10,10],[app.width*1-10,app.height*hb],
+    app.renderWindow= ui.window([5,5],[app.width*1-5,app.height*hb],
     app.styles["meshWindow"], 10)
-    app.uiWindow = ui.window([10,app.height*hb], [app.width*1-10,app.height-10],
+    app.uiWindow = ui.window([5,app.height*hb], [app.width*1-5,app.height-5],
     app.styles["uiWindow"], 10)
 
     rbox = app.renderWindow
@@ -46,25 +46,42 @@ def setWindows(app):
     app.grid = rnd.createOgrid(app.renderWindow, app.meshView, app.styles["grid"],5)
 
 
-
 def createButtons(app):
     style = app.styles["button1"]
     app.buttons=dict()
-    app.buttons[sliceMesh] = ui.button(sliceMesh,app.uiWindow, [10,10],[250,50],
-    sliceMesh,style,"SLICE MESH")
-    app.buttons["loadNext"] = ui.button("loadNext",app.uiWindow, [10,70],[250,50],
-    loadnextmesh,style,"LD NEXT MESH")
-    app.buttons["export"] = ui.button("export",app.uiWindow, [10,70+60],[250,50],
-    loadnextmesh,style,"EXPORT")
+    b=10 #button padding base dim
+    a=50 #button height base dim
+    
+    app.buttons["sliceMesh"] = ui.button("sliceMesh",app.uiWindow, [b,b],[a*5,a],
+    'sliceMesh(app)',style,"SLICE MESH")
+    app.buttons["showhideslice"] = ui.button("hideslices",app.uiWindow, [b,b+b+a],[a*5,a],
+    'showHide(app.slicerender)',style,"SHOW/HIDE SLICES")
+    app.buttons["export"] = ui.button("export",app.uiWindow, [b,b+2*(b+a)],[a*5,a],
+    'loadnextmesh(app)',style,"EXPORT SLICES")
+
+    #2nd Column
+    w=b*2+a*5
+    app.buttons["incrh"] = ui.button("incrh",app.uiWindow, [w,b],[a*5,a],
+    'incrx(app,.2)',app.styles["button2"],"INCREASE H")
+    app.buttons["decrh"] = ui.button("decrh",app.uiWindow, [w,b+b+a],[a*5,a],
+    'incrx(app,-.2)',app.styles["button2"],"DECREASE H")
+
+    #3rd Column
+    w=w+b+a*5
+    app.buttons["loadNext"] = ui.button("loadNext",app.uiWindow, [w,b],[a*5,a],
+    'loadnextmesh(app)',app.styles["button2"],"LD NEXT MESH")
+
     #deactivate until slices made
     app.buttons["export"].state = 0
-    
     
     for key in app.buttons:
         app.uiWindow.objs[app.buttons[key].name] = app.buttons[key]
 
+
 def export(app):
+    print("whoops, nothing here!")
     pass
+
 def appStarted(app):
     #starting mesh
     app.meshnum = 0
@@ -77,10 +94,12 @@ def appStarted(app):
     app.Cbg = "black"
     app.param = sliceparam(.25)
 
+
 def loadMesh(app,meshfile,started = True):
     print(f'Loading {meshfile.name} mesh')
     style = app.styles["mesh"]
     app.cMesh = msh.openSTL(meshfile.filepath)
+    app.cMesh.name = meshfile.name
     cMesh = rnd.meshObj(app.meshView,app.cMesh,style)
     app.renderWindow.objs["mesh"]=cMesh
     rnd.scale4Window(app.cMesh.bbox,app.meshView)
@@ -105,10 +124,10 @@ def loadnextmesh(app):
     app.buttons["export"].state = 0
 
 def keyPressed(app, event):
-    if event.key in ['Up', 'Right']:
-       print("No function yet!")
-    elif (event.key in ['Down', 'Left']):
-        print("No function yet!")
+    if event.key == 'Right':
+       app.meshView.addTheta(12.5,2)
+    elif event.key == 'Left':
+        app.meshView.addTheta(-12.5,2)
     elif event.key == 'm':
         print(f"run slicer at constant height:{app.param.h}")
         sliceMesh(app)
@@ -121,9 +140,9 @@ def keyPressed(app, event):
 
     elif event.key == 'h':
         #change h by .25 increments
-        app.param.h += .25
-        if app.param.h >1.5:
-            app.param.h = .25
+        app.param.h += .2
+        if app.param.h >3:
+            app.param.h = .2
         print(f'slice height = {app.param.h}')
 
 def mouseReleased(app, event):
@@ -135,12 +154,29 @@ def mouseReleased(app, event):
         if result is not None:
             print(f'')
             for n in range(len(result)):
-                result[n](app)
+                eval(result[n])
 
+def incrx(app,x):
+    app.param.h += x
 
+def showHide(appobj):
+    appobj.render = not(appobj.render)
 
 def drawBackground(app,canvas):
     canvas.create_rectangle(0,0,app.width,app.height, fill = app.Cbg)
+
+def drawParam(app,canvas):
+    style = app.styles['param']
+    origin = app.uiWindow.origin
+
+    text = f'Mesh: {app.cMesh.name}'
+    canvas.create_text(origin[0]+10,origin[1]-10, text = text, 
+            fill = style.fc, anchor = style.anchor,font = style.font)
+    
+    text = f'Slice Set: {round(app.param.h,2)}mm'
+    canvas.create_text(origin[0]+10,origin[1]-28, text = text, 
+            fill = style.fc, anchor = style.anchor,font = style.font)
+
 
 def redrawAll(app, canvas):
     if app.WH != (app.width,app.height):
@@ -150,17 +186,17 @@ def redrawAll(app, canvas):
     app.renderWindow.draw(canvas)
     app.uiWindow.draw(canvas)
     app.grid.print = False
-    
+    drawParam(app,canvas)
     
     
 def sliceMesh(app):
-    app.buttons["export"].state = 0
     app.meshslices = slicer.slicebyZ(app.cMesh,app.param.h)
     style = app.styles["slice"]
     app.slicerender = rnd.sliceObj(app.meshView,app.meshslices.slices,style)
     app.renderWindow.objs["slices"]=app.slicerender
     app.sliced = True
     app.buttons["export"].state = 1
+    print(app.renderWindow.objs)
 
     
 def run3DViewer():

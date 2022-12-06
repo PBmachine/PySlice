@@ -32,6 +32,8 @@ import math
 import numpy as np
 import UIWidgets as ui
 
+pi = math.pi
+
 #https://www.compuphase.com/axometr.htm
 def rad(degree):
     return math.radians(degree)
@@ -41,23 +43,30 @@ class trans:
         self.theta = [0,0,0]
         self.shift = np.zeros((3,1))
     
-    def rot(self, pt):
-        #just gimbal, thanks
-        Rx = np.array[[1,0,0],
-        [0,math.cos(theta[0]),-1*math.sin(theta[0])],
-        [0,math.sin(theta[0]),math.cos(theta[0])]]
+def reOrient( pt, theta):
+    #just gimbal, thanks
+    Rx = np.matrix([[1,0,0],
+    [0,math.cos(theta[0]),-1*math.sin(theta[0])],
+    [0,math.sin(theta[0]),math.cos(theta[0])]])
 
-        Ry= np.array[[math.cos(theta[1]),0,math.sin(theta[1])],
-        [0,1,0],
-        [-1*math.sin(theta[1]),0,math.cos(theta[1])]]
+    Ry= np.matrix([[math.cos(theta[1]),0,math.sin(theta[1])],
+    [0,1,0],
+    [-1*math.sin(theta[1]),0,math.cos(theta[1])]])
 
-        Rz = np.array[[math.cos(theta[2]),-1*math.sin(theta[2]),0],
-        [math.sin(theta[2]),math.cos(theta[2]),0],
-        [0,0,1]]
+    Rz = np.matrix([[math.cos(theta[2]),-1*math.sin(theta[2]),0],
+    [math.sin(theta[2]),math.cos(theta[2]),0],
+    [0,0,1]])
 
-        pt3d = np.reshape(pt,(3,1))
-        newpt = pt3d*Rz
-        return(newpt)
+    pt3d = np.asarray(pt)
+
+    pt3d = np.reshape(pt3d,(3,))
+    pt3d = np.asmatrix(pt3d)
+    newpt = pt3d*Rz
+    np.reshape(newpt,3)
+    newpt = np.ravel(newpt)
+
+
+    return(newpt)
 
         
 def isoprojXY(pt, o, scale, a=27):
@@ -71,21 +80,30 @@ def isoprojXY(pt, o, scale, a=27):
 
 
 class isoRender(object):
-    def __init__(self,window,origin,style,scale = 1):
+    def __init__(self,window,origin,style,scale = 1, theta = 0):
         self.window = window
         self.o = origin #XY origin
         self.scale = scale
         self.style = style
         self.a = math.radians(27)
+        self.theta = np.zeros((3))
         self.objs=[]
 
-    def projXY(self,pt):
+    def addTheta(self,angle,index):
+        angle = math.radians(angle)
+        self.theta[index] = self.theta[index]+angle
+
+    def projXY(self,pt1):
+        np.asarray(pt1)
+        pt = reOrient(pt1,self.theta)
+
         a = self.a
         x = pt[0]*self.scale
         y = pt[1]*self.scale
         z = pt[2]*self.scale
         xP = self.o[0]+x*math.cos(a)-y*math.cos(a)
         yP = self.o[1]- x*math.sin(a) - y*math.sin(a) - z
+
         return([xP,yP])
 
     def extBBox(self,bbox):
@@ -176,12 +194,13 @@ class lineObj(obj3D):
 
     def drawSegment(self,canvas, segment):
         p1 = segment[0]
+        np.asarray(p1)
         p2 = segment[1]
-        pts = np.zeros((3,2))
+        np.asarray(p2)
+        pts = np.zeros((2,2))
 
         pts[0] = self.isoRender.projXY(p1)
         pts[1] = self.isoRender.projXY(p2)
-
 
         self.drawLine(canvas,pts, self.style)
 

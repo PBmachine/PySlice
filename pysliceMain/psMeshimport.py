@@ -51,8 +51,9 @@ class Facet(object):
 
 
 class Mesh(): 
-    def __init__(self, fName, fInfo):
+    def __init__(self, fName, fInfo, name = "mesh"):
         self.fName = fName
+        self.name = name
         self.header = fInfo[0]
         self.numfacets = fInfo[1]
         self.fcoord = np.zeros((self.numfacets,3,3)) #3d array of all facet coordinates 

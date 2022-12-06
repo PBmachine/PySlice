@@ -12,6 +12,7 @@
 # Low: Handler for latching button events:
 ################################################### 
 from tkinter import *
+import copy
 ##>classes------------------------------------------------------------------
 class window(object):
     #a canvas in tkinter
@@ -24,6 +25,14 @@ class window(object):
 
     def dims(self):
         return(self.ext[0]-self.origin[0],self.ext[1]-self.origin[1])
+
+    def inBounds(self,pt):
+        o = self.origin
+        ext = self.ext
+        if ((pt[0]>o[0]) and (pt[0]<ext[0])) and ((pt[1]>o[1]) and (pt[1]<ext[1])):
+            return True
+        else:
+            return False
         
     def draw(self, canvas, drawobjs = True):
         style = self.style
@@ -47,7 +56,8 @@ class window(object):
 #palette
 p= {"HotPink":"#f652a0","TiffanyBlue":"#bcece0",
 "Cyan":"#36eee0","CyanDk":"#00A3A3","CyanLt":"#8AFFFF",
-"CoralLt":"#ff9b69","Coral":"#f07143", "CoralDk":'#c4533d'}
+"CoralLt":"#ff9b69","Coral":"#f07143", "CoralDk":'#c4533d',
+"LilacLt":'#d3bbdd','LilacDk':'#977397','Lilac':'#b195bd'}
 
 def defaultStyles():
     styles = dict()
@@ -57,8 +67,9 @@ def defaultStyles():
     styles["grid"] = style("","SlateGray4",1,["gray50","gray50"])
     styles["uiWindow"] = style("black","cyan",5)
     styles["button1"] = style(p["Coral"],p["CoralLt"],2,["",""],c="black",a="center",font= ('Lucida Sans Typewriter','12',"bold"))
-    styles["button2"] = style("MediumOrchid3","DeepPink3",2,["",""],c="black",a="center",font= ('Lucida Sans Typewriter','12','normal'))
+    styles["button2"] = style(p["CyanDk"],p['Cyan'],2,["",""],c="black",a="center",font= ('Lucida Sans Typewriter','12','bold'))
     styles["button3"] = style(p["Coral"],p["CoralLt"],2,["",""],c="black",a="center",font= ('Lucida Sans Typewriter','12','normal'))
+    styles["param"] = style('white','white',1,["",""],c="white",a="sw",font= ('Lucida Sans Typewriter','12','normal'))
     return styles
 
 class style(object):
@@ -108,6 +119,26 @@ class UIobj(object):
         self.resizeFont()
 
 
+class text(UIobj):
+    def __init__(self, name, window, origin, 
+     style, text ="",param=[],dims=[], **tags):
+        super().__init__(name, window, origin, style, dims)
+        self.state = 1 #1 or -1 for up and down, 0 for inactive
+        self.text = text
+        self.param = param
+
+    def draw(self,canvas):
+        style = self.style
+        if self.state != 0:
+            text = f'{self.text} {self.param}mm'
+            canvas.create_text(self.origin[0],self.origin[1], text = text, 
+            fill = style.fc, anchor = style.anchor,font = style.font)
+
+    def resizeFont(self):
+        return
+
+
+    
 ##>>button-----------------------------------
 class button(UIobj):
     def __init__(self, name, window, origin, dims, event,
@@ -118,17 +149,23 @@ class button(UIobj):
         self.clickEvents = [event]
         self.resizeFont()
         self.bounds = self.getBounds()
+        
 
 
     def resizeFont(self):
         #autoresize font to button height
-        aspect = self.dims[0]/self.dims[1]/10
-        yheight = int((self.dims[1]*aspect)//1)
+        aspect = abs(self.dims[0]/self.dims[1]/10)
+        yheight = int((self.dims[1]*aspect)*.85)
+        if len(self.text)>14:
+            self.style = copy.copy(self.style)
+            e = len(self.text)-14
+            yheight = int(yheight- self.dims[1]/30*e)
+
         font = self.style.font
         if len(font)>=2:
-            self.style.font = (font[0],yheight,font[2])
+            self.style.font = (font[0],str(yheight),font[2])
         else:
-            self.style.font = (font[0],yheight)
+            self.style.font = (font[0],str(yheight))
 
     def inBounds(self,pt):
         o = self.origin

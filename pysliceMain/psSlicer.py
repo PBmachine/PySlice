@@ -44,17 +44,31 @@ def almostEqual(d1, d2, epsilon=10**-7):
 
 # """
 
+def defaultslice_init():
+    #initializer for a generic slicer
+    pass
+
 class slice(object):
     def __init__(self,z):
         self.z = z
         self.segments = []
         self.contour = []
+        self.test = True
 
     def printsegment(self):
         for s in self.segments:
-            p1 = round(s[0][0],2), round(s[0][1],2)
-            p2 = round(s[1][0],2), round(s[1][1],2)
+            p1 = round(s[0][0],3), round(s[0][1],3)
+            p2 = round(s[1][0],3), round(s[1][1],3)
             print(f'{p1}->{p2}')
+
+    def linkContour(self):
+        if self.test:
+            segments = []
+            for s in self.segments:
+                p1 = [round(s[0][0],3), round(s[0][1],3),round(s[0][2],3)]
+                p2 = [round(s[1][0],3), round(s[1][1],3),round(s[1][2],3)]
+                segments.append([p1,p2])
+
     
 
 class countour(object):
@@ -66,11 +80,19 @@ class countour(object):
 class meshslices(object):
     def __init__(self):
         self.slices = []
+        self.data = []
 
     def printslices(self):
         for s in self.slices:
             print(f'Slice: Z: {round(s.z,2)}')
             s.printsegment()
+    
+    def slice2data(self):
+        for s in self.slices:
+            row = ['Slice',round(s.z,3)]
+            row.append(s.contour)
+            self.data.append(row)
+        
 
 def slicebyZ(mesh, h):
     data = meshslices()
@@ -139,19 +161,8 @@ def intersection(facet, zh):
     # print(I[0],I[1])
     return (I)
 
-
-
-
-
 def test():
     filepath = "Mesh_Models\\box_12_bin.stl"
     testMesh = msh.openSTL(filepath)
     F1 = testMesh.nFacet(1)
     line1 = intersection(F1,1.5)
-
-
-#slicing
-#find intersecting facets
-#calculate intersections and convert to segments
-#join segments - sort inner and outer contours
-#create slices 

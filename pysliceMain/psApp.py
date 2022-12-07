@@ -16,6 +16,7 @@ from cmu_112_graphics import *
 import psMeshimport as msh
 import ps3D_render as rnd
 import UIWidgets as ui
+import psExport
 import numpy
 import math
 import psSlicer as slicer
@@ -33,7 +34,7 @@ class sliceparam(object):
 def setWindows(app):
     hb = .75
     app.window = dict()
-    app.renderWindow= ui.window([5,5],[app.width*1-5,app.height*hb],
+    app.renderWindow = ui.window([5,5],[app.width*1-5,app.height*hb],
     app.styles["meshWindow"], 10)
     app.uiWindow = ui.window([5,app.height*hb], [app.width*1-5,app.height-5],
     app.styles["uiWindow"], 10)
@@ -47,40 +48,11 @@ def setWindows(app):
 
 
 def createButtons(app):
-    style = app.styles["button1"]
-    app.buttons=dict()
-    b=10 #button padding base dim
-    a=50 #button height base dim
-    
-    app.buttons["sliceMesh"] = ui.button("sliceMesh",app.uiWindow, [b,b],[a*5,a],
-    'sliceMesh(app)',style,"SLICE MESH")
-    app.buttons["showhideslice"] = ui.button("hideslices",app.uiWindow, [b,b+b+a],[a*5,a],
-    'showHide(app.slicerender)',style,"SHOW/HIDE SLICES")
-    app.buttons["export"] = ui.button("export",app.uiWindow, [b,b+2*(b+a)],[a*5,a],
-    'loadnextmesh(app)',style,"EXPORT SLICES")
-
-    #2nd Column
-    w=b*2+a*5
-    app.buttons["incrh"] = ui.button("incrh",app.uiWindow, [w,b],[a*5,a],
-    'incrx(app,.2)',app.styles["button2"],"INCREASE H")
-    app.buttons["decrh"] = ui.button("decrh",app.uiWindow, [w,b+b+a],[a*5,a],
-    'incrx(app,-.2)',app.styles["button2"],"DECREASE H")
-
-    #3rd Column
-    w=w+b+a*5
-    app.buttons["loadNext"] = ui.button("loadNext",app.uiWindow, [w,b],[a*5,a],
-    'loadnextmesh(app)',app.styles["button2"],"LD NEXT MESH")
-
-    #deactivate until slices made
-    app.buttons["export"].state = 0
+    buttons = ui.createButtons(app)
     
     for key in app.buttons:
         app.uiWindow.objs[app.buttons[key].name] = app.buttons[key]
 
-
-def export(app):
-    print("whoops, nothing here!")
-    pass
 
 def appStarted(app):
     #starting mesh
@@ -93,6 +65,7 @@ def appStarted(app):
     loadMesh(app,allmeshfiles[app.meshnum],False)
     app.Cbg = "black"
     app.param = sliceparam(.25)
+    app.fileExport = psExport.fileOutput("null",'sliceexport\\','CSV')
 
 
 def loadMesh(app,meshfile,started = True):
@@ -104,6 +77,15 @@ def loadMesh(app,meshfile,started = True):
     app.renderWindow.objs["mesh"]=cMesh
     rnd.scale4Window(app.cMesh.bbox,app.meshView)
 
+def loadnextmesh(app):
+    if app.sliced:
+        app.slicerender.render = False
+    app.meshnum += 1
+    if app.meshnum >= len(allmeshfiles):
+        app.meshnum = 0
+    loadMesh(app,allmeshfiles[app.meshnum])
+    app.buttons["export"].state = 0
+
 def reScale(app):
     scale =[app.width/app.WH[0],app.height/app.WH[1]]
     app.renderWindow.reScale(scale)
@@ -113,15 +95,6 @@ def reScale(app):
         app.uiWindow.objs[key].reScale(scale)
         # obj.origin[1] *= scale[1]
     app.WH = (app.width,app.height)
-
-def loadnextmesh(app):
-    if app.sliced:
-        app.slicerender.render = False
-    app.meshnum += 1
-    if app.meshnum >= len(allmeshfiles):
-        app.meshnum = 0
-    loadMesh(app,allmeshfiles[app.meshnum])
-    app.buttons["export"].state = 0
 
 def keyPressed(app, event):
     if event.key == 'Right':
@@ -146,18 +119,25 @@ def keyPressed(app, event):
         print(f'slice height = {app.param.h}')
 
 def mouseReleased(app, event):
-    print(f'mouseReleased at {(event.x, event.y)}')
-    buttons = app.buttons
-    pt = (event.x, event.y)
-    for key in buttons:
-        result = buttons[key].isPressed(pt)
-        if result is not None:
-            print(f'')
-            for n in range(len(result)):
-                eval(result[n])
+    if app.mouseCheck:
+        print(f'mouseReleased at {(event.x, event.y)}')
+        buttons = app.buttons
+        pt = (event.x, event.y)
+        app.mouseCheck = False
+        for key in buttons:
+            result = buttons[key].isPressed(pt)
+            if result is not None:
+                print(f'')
+                for n in range(len(result)):
+                    eval(result[n])
 
 def incrx(app,x):
     app.param.h += x
+    if app.param.h <= 0:
+        app.parah.h = .2
+
+def mousePressed(app, event):
+    app.mouseCheck = True
 
 def showHide(appobj):
     appobj.render = not(appobj.render)
@@ -167,14 +147,14 @@ def drawBackground(app,canvas):
 
 def drawParam(app,canvas):
     style = app.styles['param']
-    origin = app.uiWindow.origin
+    origin = app.renderWindow.origin
 
     text = f'Mesh: {app.cMesh.name}'
-    canvas.create_text(origin[0]+10,origin[1]-10, text = text, 
+    canvas.create_text(origin[0]+10,origin[1]+10, text = text, 
             fill = style.fc, anchor = style.anchor,font = style.font)
     
     text = f'Slice Set: {round(app.param.h,2)}mm'
-    canvas.create_text(origin[0]+10,origin[1]-28, text = text, 
+    canvas.create_text(origin[0]+10,origin[1]+28, text = text, 
             fill = style.fc, anchor = style.anchor,font = style.font)
 
 
@@ -197,7 +177,16 @@ def sliceMesh(app):
     app.sliced = True
     app.buttons["export"].state = 1
     print(app.renderWindow.objs)
+    
+def export(app,data = []):
+    if name == "null":
+        name = app.cMesh.name
+    if len(data)<=0:
+        data = app.meshslices.slices
 
+
+    
+    app.fileExport.exportCSV
     
 def run3DViewer():
     print('Running 3D viewer ...')
@@ -205,11 +194,14 @@ def run3DViewer():
 
 cone = meshFile("cone","Mesh_Models\\Cone_10x10_96_bin.stl")
 bunny = meshFile("bunny","Mesh_Models\\bunny_lowpoly_bin.stl")
-anglebox = meshFile("anglebox","Mesh_Models\\box_12_bin.stl")
-testbox = meshFile("testbox","Mesh_Models\\defaultbox_bin.stl")
+axolotl = meshFile("axolotl","Mesh_Models\\axolotl_lowpoly.stl")
 sphere = meshFile("sphere","Mesh_Models\\sphere_10x10_180.stl")
 donut = meshFile("donut","Mesh_Models\\donut.stl")
-allmeshfiles = [bunny,cone,sphere,donut,anglebox,testbox]
+# trex = meshFile("trex","Mesh_Models\\Trex_Skull_lp.stl")
+# frogchair = meshFile("frogchair","Mesh_Models\\frogchair.stl")
+#Skull by Anthony at 3DP.org https://www.thingiverse.com/3p3d/designs
+allmeshfiles = [bunny,cone,axolotl,sphere,donut]
+# ,trex,frogchair]
 
 def addMesh(name,filepath):
     newMesh=meshFile(name,filepath)

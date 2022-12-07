@@ -47,34 +47,9 @@ def setWindows(app):
     app.grid = rnd.createOgrid(app.renderWindow, app.meshView, app.styles["grid"],5)
 
 
-def createButtons(app):
-    style = app.styles["button1"]
-    app.buttons=dict()
-    
-    #Button UI
-    b=10 #button padding base dim
-    a=50 #button height base dim
-    
-    app.buttons["sliceMesh"] = ui.button("sliceMesh",app.uiWindow, [b,b],[a*5,a],
-    'sliceMesh(app)',style,"SLICE MESH")
-    app.buttons["showhideslice"] = ui.button("hideslices",app.uiWindow, [b,b+b+a],[a*5,a],
-    'showHide(app.slicerender)',style,"SHOW/HIDE SLICES")
-    app.buttons["export"] = ui.button("export",app.uiWindow, [b,b+2*(b+a)],[a*5,a],
-    'loadnextmesh(app)',style,"EXPORT SLICES")
-
-    #2nd Column
-    w=b*2+a*5
-    app.buttons["incrh"] = ui.button("incrh",app.uiWindow, [w,b],[a*5,a],
-    'incrx(app,.2)',app.styles["button2"],"INCREASE H")
-    app.buttons["decrh"] = ui.button("decrh",app.uiWindow, [w,b+b+a],[a*5,a],
-    'incrx(app,-.2)',app.styles["button2"],"DECREASE H")
-
-    #3rd Column
-    w=w+b+a*5
-    app.buttons["loadNext"] = ui.button("loadNext",app.uiWindow, [w,b],[a*5,a],
-    'loadnextmesh(app)',app.styles["button2"],"LD NEXT MESH")
-
-    #deactivate until slices made
+def loadButtons(app):
+    app.buttons = ui.createButtons(app)
+  
     app.buttons["export"].state = 0
    
     for key in app.buttons:
@@ -84,11 +59,12 @@ def createButtons(app):
 def appStarted(app):
     #starting mesh
     app.meshnum = 0
+    app.t = 0
     app.WH = (app.width, app.height)
     app.styles = ui.defaultStyles()
     setWindows(app)
     app.sliced = False
-    createButtons(app)
+    loadButtons(app)
     loadMesh(app,allmeshfiles[app.meshnum],False)
     app.Cbg = "black"
     app.param = sliceparam(.25)
@@ -184,18 +160,21 @@ def drawParam(app,canvas):
     canvas.create_text(origin[0]+10,origin[1]+28, text = text, 
             fill = style.fc, anchor = style.anchor,font = style.font)
 
+def timerFired(app): 
+    app.t += 1
+    if app.t>100:app.t = 1
 
 def redrawAll(app, canvas):
     if app.WH != (app.width,app.height):
         reScale(app)
         app.WH = (app.width,app.height)
-    drawBackground(app, canvas)
+
     app.renderWindow.draw(canvas)
     app.uiWindow.draw(canvas)
     app.grid.print = False
     drawParam(app,canvas)
-    
-    
+
+
 def sliceMesh(app):
     app.meshslices = slicer.slicebyZ(app.cMesh,app.param.h)
     style = app.styles["slice"]
@@ -224,11 +203,10 @@ bunny = meshFile("bunny","Mesh_Models\\bunny_lowpoly_bin.stl")
 axolotl = meshFile("axolotl","Mesh_Models\\axolotl_lowpoly.stl")
 sphere = meshFile("sphere","Mesh_Models\\sphere_10x10_180.stl")
 donut = meshFile("donut","Mesh_Models\\donut.stl")
-# trex = meshFile("trex","Mesh_Models\\Trex_Skull_lp.stl")
-# frogchair = meshFile("frogchair","Mesh_Models\\frogchair.stl")
-#Skull by Anthony at 3DP.org https://www.thingiverse.com/3p3d/designs
-allmeshfiles = [bunny,cone,axolotl,sphere,donut]
-# ,trex,frogchair]
+frogchair = meshFile("frogchair","Mesh_Models\\frogchair.stl")
+
+allmeshfiles = [bunny,cone,axolotl,sphere,donut,frogchair]
+
 
 def addMesh(name,filepath):
     newMesh=meshFile(name,filepath)

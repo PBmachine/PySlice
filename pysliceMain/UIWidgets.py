@@ -72,6 +72,34 @@ def defaultStyles():
     styles["param"] = style('white','white',1,["",""],c="white",a="nw",font= ('Lucida Sans Typewriter','12','normal'))
     return styles
 
+def createButtons(app):
+    style = app.styles["button1"]
+    buttons=dict()
+    
+    #Button UI
+    b=10 #button padding base dim
+    a=50 #button height base dim
+    
+    buttons["sliceMesh"] = button("sliceMesh",app.uiWindow, [b,b],[a*5,a],
+    'sliceMesh(app)',style,"SLICE MESH")
+    buttons["showhideslice"] = button("hideslices",app.uiWindow, [b,b+b+a],[a*5,a],
+    'showHide(app.slicerender)',style,"SHOW/HIDE SLICES")
+    buttons["export"] = button("export",app.uiWindow, [b,b+2*(b+a)],[a*5,a],
+    'loadnextmesh(app)',style,"EXPORT SLICES")
+
+    #2nd Column
+    w=b*2+a*5
+    buttons["incrh"] = button("incrh",app.uiWindow, [w,b],[a*5,a],
+    'incrx(app,.2)',app.styles["button2"],"INCREASE H")
+    buttons["decrh"] = button("decrh",app.uiWindow, [w,b+b+a],[a*5,a],
+    'incrx(app,-.2)',app.styles["button2"],"DECREASE H")
+
+    #3rd Column
+    w=w+b+a*5
+    buttons["loadNext"] = button("loadNext",app.uiWindow, [w,b],[a*5,a],
+    'loadnextmesh(app)',app.styles["button2"],"LD NEXT MESH")
+    return buttons
+
 class style(object):
     def __init__(self,fillc,linec,lineweight, stipple = ["",""], **text ):
         self.fc = fillc
@@ -219,33 +247,3 @@ def drawCircle(app,canvas,x0,y0,r,style):
     canvas.create_oval(x0-r, y0-r, x0+r, y0+r, 
     fill = style.f, outline = style.l, width = style.w)
 
-def createButtons(app):
-    style = app.styles["button1"]
-    buttons=dict()
-    
-    #Button UI
-    b=10 #button padding base dim
-    a=50 #button height base dim
-    
-    app.buttons["sliceMesh"] = ui.button("sliceMesh",app.uiWindow, [b,b],[a*5,a],
-    'sliceMesh(app)',style,"SLICE MESH")
-    app.buttons["showhideslice"] = ui.button("hideslices",app.uiWindow, [b,b+b+a],[a*5,a],
-    'showHide(app.slicerender)',style,"SHOW/HIDE SLICES")
-    app.buttons["export"] = ui.button("export",app.uiWindow, [b,b+2*(b+a)],[a*5,a],
-    'loadnextmesh(app)',style,"EXPORT SLICES")
-
-    #2nd Column
-    w=b*2+a*5
-    app.buttons["incrh"] = ui.button("incrh",app.uiWindow, [w,b],[a*5,a],
-    'incrx(app,.2)',app.styles["button2"],"INCREASE H")
-    app.buttons["decrh"] = ui.button("decrh",app.uiWindow, [w,b+b+a],[a*5,a],
-    'incrx(app,-.2)',app.styles["button2"],"DECREASE H")
-
-    #3rd Column
-    w=w+b+a*5
-    app.buttons["loadNext"] = ui.button("loadNext",app.uiWindow, [w,b],[a*5,a],
-    'loadnextmesh(app)',app.styles["button2"],"LD NEXT MESH")
-
-    #deactivate until slices made
-    app.buttons["export"].state = 0
-    return(buttons)

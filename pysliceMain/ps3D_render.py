@@ -88,6 +88,7 @@ class isoRender(object):
         self.a = math.radians(27)
         self.theta = np.zeros((3))
         self.objs=[]
+        
 
     def addTheta(self,angle,index):
         angle = math.radians(angle)
@@ -152,6 +153,9 @@ class obj3D(object):
         self.style = style
         self.rescale = rescale
         self.render = render
+        self.recalc=True
+        self.drawdata = []
+        self.savedtheta = self.isoRender.theta.copy()
 
 class meshObj(obj3D):
     def __init__(self,isoRender,mesh,style, rescale = True, render = True):
@@ -162,12 +166,24 @@ class meshObj(obj3D):
         if self.render == False:
             return
         mesh = self.mesh
-        for i in range(mesh.numfacets):
-            face = mesh.nFacet(i).v
-            pts = np.zeros((3,2))
-            for n in range(3):
-                pts[n] = self.isoRender.projXY(face[n])
-            self.drawTriangle(canvas,pts, self.style)
+        if not np.allclose(self.savedtheta, self.isoRender.theta, rtol=1e-05, atol=1e-05, equal_nan=False):
+            self.recalc = True
+            self.savedtheta = self.isoRender.theta.copy()
+            # print(self.savedtheta)
+
+        if self.recalc:
+            self.drawdata = []
+            for i in range(mesh.numfacets):
+                face = mesh.nFacet(i).v
+                pts = np.zeros((3,2))
+                for n in range(3):
+                    pts[n] = self.isoRender.projXY(face[n])
+                self.drawTriangle(canvas,pts, self.style)
+                self.drawdata.append(pts)
+            self.recalc = False
+        else:
+            for n in range(len(self.drawdata)):
+                self.drawTriangle(canvas,self.drawdata[n], self.style)
 
     def drawTriangle(self,canvas,pt, style):
         canvas.create_polygon(pt[0][0], pt[0][1], 
@@ -181,13 +197,27 @@ class lineObj(obj3D):
     def __init__(self,isoRender,lines,style, rescale = True, render = True):
         super().__init__(isoRender,style,rescale, render)      
         self.lines= lines
+        self.recalc=True
+        self.drawdata = []
+        self.savedtheta = self.isoRender.theta.copy()
 
     def draw(self,canvas):
         if self.render == False:
             return
-        for n in range(len(self.lines)):
-            segment = self.lines[n]
-            self.drawSegment(canvas,segment)
+        if not np.allclose(self.savedtheta, self.isoRender.theta, rtol=1e-05, atol=1e-05, equal_nan=False):
+            self.recalc = True
+            self.savedtheta = self.isoRender.theta.copy()
+
+        if self.recalc:
+            self.drawdata = []    
+            for n in range(len(self.lines)):
+                segment = self.lines[n]
+                self.drawSegment(canvas,segment)
+            self.recalc = False
+        else:
+            for n in range(len(self.drawdata)):
+                self.drawLine(canvas,self.drawdata[n], self.style)
+                
 
     def checkSegment(self):
         pass
@@ -201,6 +231,7 @@ class lineObj(obj3D):
 
         pts[0] = self.isoRender.projXY(p1)
         pts[1] = self.isoRender.projXY(p2)
+        self.drawdata.append(pts)
 
         self.drawLine(canvas,pts, self.style)
 
@@ -237,9 +268,9 @@ def scale4Window(bbox, isoObj):
     else:
         scale = (Ww/Mw)
 
-    oX = wratio*Ww+wmin*scale*wratio + window.margin
+    oX = .5*Ww+scale*wratio + window.margin
     oY = Wh+window.margin-hmin*scale + window.margin
-    origin = (oX,oY)
+    origin = [oX,oY]
 
     isoObj.scale = scale
     isoObj.o = origin

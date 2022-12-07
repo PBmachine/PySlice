@@ -65,6 +65,7 @@ def defaultStyles():
     styles["slice"] = style("","green2",1)
     styles["mesh"] = style(p['CyanDk'],p['CyanDk'],1,["gray25",""])
     styles["grid"] = style("","SlateGray4",1,["gray50","gray50"])
+    styles["hidden"] = style("","SlateGray4",0,["gray50","gray50"])
     styles["uiWindow"] = style("black","cyan",5)
     styles["button1"] = style(p["Coral"],p["CoralLt"],2,["",""],c="black",a="center",font= ('Lucida Sans Typewriter','12',"bold"))
     styles["button2"] = style(p["CyanDk"],p['Cyan'],2,["",""],c="black",a="center",font= ('Lucida Sans Typewriter','12','bold'))
@@ -85,7 +86,7 @@ def createButtons(app):
     buttons["showhideslice"] = button("hideslices",app.uiWindow, [b,b+b+a],[a*5,a],
     'showHide(app.slicerender)',style,"SHOW/HIDE SLICES")
     buttons["export"] = button("export",app.uiWindow, [b,b+2*(b+a)],[a*5,a],
-    'loadnextmesh(app)',style,"EXPORT SLICES")
+    'export(app)',style,"EXPORT SLICES")
 
     #2nd Column
     w=b*2+a*5
@@ -93,11 +94,24 @@ def createButtons(app):
     'incrx(app,.2)',app.styles["button2"],"INCREASE H")
     buttons["decrh"] = button("decrh",app.uiWindow, [w,b+b+a],[a*5,a],
     'incrx(app,-.2)',app.styles["button2"],"DECREASE H")
+    buttons["reloadapp"] = button("reloadapp",app.uiWindow, [w,b+2*(b+a)],[a*5,a],
+    'appStarted(app)',app.styles["button2"],"RESET")
+
 
     #3rd Column
     w=w+b+a*5
     buttons["loadNext"] = button("loadNext",app.uiWindow, [w,b],[a*5,a],
     'loadnextmesh(app)',app.styles["button2"],"LD NEXT MESH")
+    buttons["loadCustom"] = button("loadCustom",app.uiWindow, [w,b+b+a],[a*5,a],
+    'loadnextmesh(app)',app.styles["button2"],"LD CUSTOM MESH")
+    buttons["help"] = button("help",app.uiWindow, [w,b+2*(b+a)],[a*5,a],
+    'showInfo(app)',app.styles["button2"],"HELP INFO")
+
+    #icon
+    sizeW,sizeH = app.home_icon.size
+    ox,oy = app.uiWindow.ext[0]-b*1.5-sizeW,-sizeH-b
+    buttons["homeView"] = button("homeView",app.uiWindow, [ox,oy],[sizeW,sizeH],
+    'resetTheta(app)',app.styles["hidden"],"")
     return buttons
 
 class style(object):
@@ -131,6 +145,7 @@ class UIobj(object):
         self.dims = dims
         self.clickEvents = []
         self.tags = tags
+        self.reScale = True
 
     def getBounds(self, shape = "rectangle"):
         if shape == "rectangle":
@@ -143,7 +158,7 @@ class UIobj(object):
     def reScale(self,scale):
         for n in range(2):
             self.origin[n] *= scale[n]
-            self.dims[n] *= scale[n]
+            if self.reScale:self.dims[n] *= scale[n]
         self.resizeFont()
 
 
@@ -182,6 +197,8 @@ class button(UIobj):
 
     def resizeFont(self):
         #autoresize font to button height
+        if len(self.text)<1:
+            return
         aspect = abs(self.dims[0]/self.dims[1]/10)
         yheight = int((self.dims[1]*aspect)*.85)
         if len(self.text)>14:

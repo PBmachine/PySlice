@@ -48,9 +48,13 @@ def setWindows(app):
 
 
 def loadButtons(app):
+    app.home_icon = app.loadImage('homeicon.png')
     app.buttons = ui.createButtons(app)
   
     app.buttons["export"].state = 0
+    app.buttons["loadCustom"].state = 0
+    app.buttons["showhideslice"].state = 0
+    app.buttons["homeView"].reScale = False
    
     for key in app.buttons:
         app.uiWindow.objs[app.buttons[key].name] = app.buttons[key]
@@ -67,7 +71,7 @@ def appStarted(app):
     loadButtons(app)
     loadMesh(app,allmeshfiles[app.meshnum],False)
     app.Cbg = "black"
-    app.param = sliceparam(.25)
+    app.param = sliceparam(.5)
     app.fileExport = psExport.fileOutput("null",'sliceexport\\','CSV')
 
 
@@ -139,6 +143,9 @@ def incrx(app,x):
     if app.param.h <= 0:
         app.parah.h = .2
 
+def resetTheta(app):
+    app.meshView.theta = numpy.zeros((3))
+
 def mousePressed(app, event):
     app.mouseCheck = True
 
@@ -148,6 +155,15 @@ def showHide(appobj):
 def drawBackground(app,canvas):
     canvas.create_rectangle(0,0,app.width,app.height, fill = app.Cbg)
 
+def drawHomeIcon(app,canvas):
+    image = app.home_icon
+    iW,iH = image.size
+    origin = app.renderWindow.ext
+    canvas.create_image(origin[0]-iW/2-10,origin[1]-iH/2-10,image=ImageTk.PhotoImage(app.home_icon))
+
+def showInfo(app):
+    print("whoops nothing here!")
+
 def drawParam(app,canvas):
     style = app.styles['param']
     origin = app.renderWindow.origin
@@ -156,8 +172,14 @@ def drawParam(app,canvas):
     canvas.create_text(origin[0]+10,origin[1]+10, text = text, 
             fill = style.fc, anchor = style.anchor,font = style.font)
     
-    text = f'Slice Set: {round(app.param.h,2)}mm'
+    text = f'Slice Height: {round(app.param.h,2)}mm'
     canvas.create_text(origin[0]+10,origin[1]+28, text = text, 
+            fill = style.fc, anchor = style.anchor,font = style.font)
+
+    dims = app.cMesh.bbox[1]-app.cMesh.bbox[0]
+
+    text = f'Mesh Dimensions\nX:{round(dims[0],2)} Y:{round(dims[1],2)} Z:{round(dims[2],2)}'
+    canvas.create_text(origin[0]+10,origin[1]+46, text = text, 
             fill = style.fc, anchor = style.anchor,font = style.font)
 
 def timerFired(app): 
@@ -173,6 +195,7 @@ def redrawAll(app, canvas):
     app.uiWindow.draw(canvas)
     app.grid.print = False
     drawParam(app,canvas)
+    drawHomeIcon(app,canvas)
 
 
 def sliceMesh(app):
@@ -182,15 +205,13 @@ def sliceMesh(app):
     app.renderWindow.objs["slices"]=app.slicerender
     app.sliced = True
     app.buttons["export"].state = 1
-    print(app.renderWindow.objs)
     
+
 def export(app,data = []):
     if name == "null":
         name = app.cMesh.name
     if len(data)<=0:
         data = app.meshslices.slices
-
-
     
     app.fileExport.exportCSV
     
@@ -204,8 +225,9 @@ axolotl = meshFile("axolotl","Mesh_Models\\axolotl_lowpoly.stl")
 sphere = meshFile("sphere","Mesh_Models\\sphere_10x10_180.stl")
 donut = meshFile("donut","Mesh_Models\\donut.stl")
 frogchair = meshFile("frogchair","Mesh_Models\\frogchair.stl")
+amphora = meshFile("amphora","Mesh_Models\\amphora.stl")
 
-allmeshfiles = [bunny,cone,axolotl,sphere,donut,frogchair]
+allmeshfiles = [bunny,cone,axolotl,sphere,donut,frogchair,amphora]
 
 
 def addMesh(name,filepath):
@@ -214,7 +236,7 @@ def addMesh(name,filepath):
 
 default = bunny
 defaultmesh = msh.openSTL(default.filepath)
-h = 0.25
+h = 0.5
 
 
 #test

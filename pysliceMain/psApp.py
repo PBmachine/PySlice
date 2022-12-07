@@ -48,8 +48,35 @@ def setWindows(app):
 
 
 def createButtons(app):
-    buttons = ui.createButtons(app)
+    style = app.styles["button1"]
+    app.buttons=dict()
     
+    #Button UI
+    b=10 #button padding base dim
+    a=50 #button height base dim
+    
+    app.buttons["sliceMesh"] = ui.button("sliceMesh",app.uiWindow, [b,b],[a*5,a],
+    'sliceMesh(app)',style,"SLICE MESH")
+    app.buttons["showhideslice"] = ui.button("hideslices",app.uiWindow, [b,b+b+a],[a*5,a],
+    'showHide(app.slicerender)',style,"SHOW/HIDE SLICES")
+    app.buttons["export"] = ui.button("export",app.uiWindow, [b,b+2*(b+a)],[a*5,a],
+    'loadnextmesh(app)',style,"EXPORT SLICES")
+
+    #2nd Column
+    w=b*2+a*5
+    app.buttons["incrh"] = ui.button("incrh",app.uiWindow, [w,b],[a*5,a],
+    'incrx(app,.2)',app.styles["button2"],"INCREASE H")
+    app.buttons["decrh"] = ui.button("decrh",app.uiWindow, [w,b+b+a],[a*5,a],
+    'incrx(app,-.2)',app.styles["button2"],"DECREASE H")
+
+    #3rd Column
+    w=w+b+a*5
+    app.buttons["loadNext"] = ui.button("loadNext",app.uiWindow, [w,b],[a*5,a],
+    'loadnextmesh(app)',app.styles["button2"],"LD NEXT MESH")
+
+    #deactivate until slices made
+    app.buttons["export"].state = 0
+   
     for key in app.buttons:
         app.uiWindow.objs[app.buttons[key].name] = app.buttons[key]
 

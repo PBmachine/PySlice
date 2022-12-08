@@ -1,6 +1,6 @@
 ###################################################
 # Phoebe DeGroot
-# PySlice App MVC v1_01: 20-11-22
+# PySlice App Tp3
 #  ____   __  __   ____   __     __   ____   ______   
 #  == ==  ==  ==  ==  -=  ==     ==  ==  -=  ==   -
 #  ==  =  ==_ ==   -==    ==     ==  ==      ==-=
@@ -9,8 +9,7 @@
 # 
 ################################################### 
 # To Do:
-# reorganize classes for rendering, color, projection
-#better scaling
+# Demo :)
 ###################################################
 from cmu_112_graphics import *
 import psMeshimport as msh
@@ -49,12 +48,13 @@ def setWindows(app):
 
 def loadButtons(app):
     app.home_icon = app.loadImage('homeicon.png')
+    app.info_screen = app.loadImage('info.png')
+    app.logo = app.loadImage('pyslice_logo.png')
     app.buttons = ui.createButtons(app)
   
     app.buttons["export"].state = 0
-    app.buttons["loadCustom"].state = 0
     app.buttons["showhideslice"].state = 0
-    app.buttons["homeView"].reScale = False
+    app.buttons["homeView"].scaledims = False
    
     for key in app.buttons:
         app.uiWindow.objs[app.buttons[key].name] = app.buttons[key]
@@ -68,9 +68,11 @@ def appStarted(app):
     app.styles = ui.defaultStyles()
     setWindows(app)
     app.sliced = False
+    app.rotaxis = 0
     loadButtons(app)
     loadMesh(app,allmeshfiles[app.meshnum],False)
     app.Cbg = "black"
+    app.infomode = False
     app.param = sliceparam(.5)
     app.fileExport = psExport.fileOutput("null",'sliceexport\\','CSV')
 
@@ -92,6 +94,7 @@ def loadnextmesh(app):
         app.meshnum = 0
     loadMesh(app,allmeshfiles[app.meshnum])
     app.buttons["export"].state = 0
+    app.buttons["showhideslice"].state = 0
 
 def reScale(app):
     scale =[app.width/app.WH[0],app.height/app.WH[1]]
@@ -104,10 +107,21 @@ def reScale(app):
     app.WH = (app.width,app.height)
 
 def keyPressed(app, event):
+    if app.infomode:
+        app.infomode = False
+        return
     if event.key == 'Right':
        app.meshView.addTheta(12.5,2)
     elif event.key == 'Left':
         app.meshView.addTheta(-12.5,2)
+    elif event.key == 'Up':
+       app.meshView.addTheta(12.5,app.rotaxis)
+    elif event.key == 'Down':
+       app.meshView.addTheta(-12.5,app.rotaxis)
+    elif event.key == 'x':
+        app.rotaxis = 0
+    elif event.key == 'y':
+        app.rotaxis = 1
     elif event.key == 'm':
         print(f"run slicer at constant height:{app.param.h}")
         sliceMesh(app)
@@ -120,12 +134,17 @@ def keyPressed(app, event):
 
     elif event.key == 'h':
         #change h by .25 increments
-        app.param.h += .2
-        if app.param.h >3:
-            app.param.h = .2
+        incr(app,.5)
+        print(f'slice height = {app.param.h}')
+    elif event.key == 'g':
+        #change h by .25 increments
+        incr(app,-.5)
         print(f'slice height = {app.param.h}')
 
 def mouseReleased(app, event):
+    if app.infomode:
+        app.infomode = False
+        return
     if app.mouseCheck:
         print(f'mouseReleased at {(event.x, event.y)}')
         buttons = app.buttons
@@ -134,14 +153,14 @@ def mouseReleased(app, event):
         for key in buttons:
             result = buttons[key].isPressed(pt)
             if result is not None:
-                print(f'')
+                # print(f'')
                 for n in range(len(result)):
                     eval(result[n])
 
 def incrx(app,x):
     app.param.h += x
-    if app.param.h <= 0:
-        app.parah.h = .2
+    if app.param.h <= .10:
+        app.parah.h = .10
 
 def resetTheta(app):
     app.meshView.theta = numpy.zeros((3))
@@ -161,8 +180,18 @@ def drawHomeIcon(app,canvas):
     origin = app.renderWindow.ext
     canvas.create_image(origin[0]-iW/2-10,origin[1]-iH/2-10,image=ImageTk.PhotoImage(app.home_icon))
 
+    image = app.logo
+    iW,iH = image.size
+    origin = app.width-iW/2-5,10+iH/2
+    canvas.create_image(origin[0],origin[1],image=ImageTk.PhotoImage(image))
+
+    if app.infomode:
+        info = app.info_screen
+        origin = [app.width/2,app.height/2]
+        canvas.create_image(origin[0],origin[1],image=ImageTk.PhotoImage(app.info_screen))
+
 def showInfo(app):
-    print("whoops nothing here!")
+    app.infomode = True
 
 def drawParam(app,canvas):
     style = app.styles['param']
@@ -196,6 +225,7 @@ def redrawAll(app, canvas):
     app.grid.print = False
     drawParam(app,canvas)
     drawHomeIcon(app,canvas)
+    
 
 
 def sliceMesh(app):
@@ -205,20 +235,26 @@ def sliceMesh(app):
     app.renderWindow.objs["slices"]=app.slicerender
     app.sliced = True
     app.buttons["export"].state = 1
+    app.buttons["showhideslice"].state = 1
     
 
-def export(app,data = []):
-    if name == "null":
-        name = app.cMesh.name
+def export(app,export, data = []):
+    if export.filename == "null":
+        export.filename = app.cMesh.name
     if len(data)<=0:
-        data = app.meshslices.slices
+        data = app.meshslices.slice2data()
+        export.header = ["PYSLICE OUTPUT",f'sliced at {app.param.h}']
+
     
-    app.fileExport.exportCSV
+    export.exportCSV(data)
     
 def run3DViewer():
     print('Running 3D viewer ...')
     runApp(width=800, height=800)
 
+
+# mesh files
+#defailt 
 cone = meshFile("cone","Mesh_Models\\Cone_10x10_96_bin.stl")
 bunny = meshFile("bunny","Mesh_Models\\bunny_lowpoly_bin.stl")
 axolotl = meshFile("axolotl","Mesh_Models\\axolotl_lowpoly.stl")
@@ -229,10 +265,21 @@ amphora = meshFile("amphora","Mesh_Models\\amphora.stl")
 
 allmeshfiles = [bunny,cone,axolotl,sphere,donut,frogchair,amphora]
 
+customMesh = meshFile("myMesh","Mesh_Models\\customMesh.stl")
 
+#
 def addMesh(name,filepath):
     newMesh=meshFile(name,filepath)
     allmeshfiles.append(newMesh)
+
+def loadCustomMesh(app,name=customMesh):
+    if app.sliced:
+        app.slicerender.render = False
+    loadMesh(app,customMesh)
+    app.buttons["export"].state = 0
+    app.buttons["showhideslice"].state = 0
+
+    allmeshfiles.append(customMesh)
 
 default = bunny
 defaultmesh = msh.openSTL(default.filepath)

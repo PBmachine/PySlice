@@ -11,11 +11,6 @@
 # 
 ###################################################
 
-#reorg iso class
-# 
-# render the lines
-#rendering to make further back stuff less bright - could do distance calc or fake it relative to pixel y value - zcoordinate
-
 #http://www.codinglabs.net/article_world_view_projection_matrix.aspx
 # 3D object transforms using 4d vectors- we can set this as [0,0,0,1]
 #[[Xx,Yx,Zx,Tx],[Xy,Yy,Zy,Ty],[Xz,Yz,Zz,Tz],[0,0,0,1]]
@@ -61,7 +56,8 @@ def reOrient( pt, theta):
 
     pt3d = np.reshape(pt3d,(3,))
     pt3d = np.asmatrix(pt3d)
-    newpt = pt3d*Rz
+    newpt = pt3d*Rx*Ry*Rz
+
     np.reshape(newpt,3)
     newpt = np.ravel(newpt)
 
@@ -151,9 +147,9 @@ class obj3D(object):
         if self not in isoRender.objs:
             isoRender.objs.append(self)
         self.style = style
-        self.rescale = rescale
-        self.render = render
-        self.recalc=True
+        self.rescale = rescale #does object rescale with window
+        self.render = render #activate/deactive render
+        self.recalc = True #recalculate proj or use saved data
         self.drawdata = []
         self.savedtheta = self.isoRender.theta.copy()
 
@@ -166,7 +162,7 @@ class meshObj(obj3D):
         if self.render == False:
             return
         mesh = self.mesh
-        if not np.allclose(self.savedtheta, self.isoRender.theta, rtol=1e-05, atol=1e-05, equal_nan=False):
+        if self.recalc or not (np.allclose(self.savedtheta, self.isoRender.theta, rtol=1e-05, atol=1e-05, equal_nan=False)):
             self.recalc = True
             self.savedtheta = self.isoRender.theta.copy()
             # print(self.savedtheta)
@@ -251,7 +247,7 @@ class sliceObj(lineObj):
 def scale4Window(bbox, isoObj):
     #given window object and mesh bbox find scale and fit to window
     window = isoObj.window
-    Mw, Mh, wmin,hmin,wratio = isoObj.gdimBBOX(bbox[0],bbox[1],scale = 1)
+    Mw, Mh, wmin,hmin,oratio = isoObj.gdimBBOX(bbox[0],bbox[1],scale = 1)
     # print(f'M:{Mw},{Mh},min:{wmin},{hmin}')
     #Mw, Mh, wmin,hmin,wratio = isoObj.scale2BBox(bbox,scale = 1)
 
@@ -268,7 +264,7 @@ def scale4Window(bbox, isoObj):
     else:
         scale = (Ww/Mw)
 
-    oX = .5*Ww+scale*wratio + window.margin
+    oX = .5*Ww+scale*oratio + window.margin
     oY = Wh+window.margin-hmin*scale + window.margin
     origin = [oX,oY]
 

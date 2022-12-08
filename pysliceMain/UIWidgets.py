@@ -9,7 +9,6 @@
 ################################################### 
 # Implement ToDo:
 #
-# Low: Handler for latching button events:
 ################################################### 
 from tkinter import *
 import copy
@@ -46,6 +45,8 @@ class window(object):
         for n in range(2):
             self.origin[n] *= scale[n]
             self.ext[n] *= scale[n]
+        for key in self.objs:
+            self.objs[key].recalc = True
 
     def drawobjs(self,canvas):
         for key in self.objs:
@@ -86,14 +87,14 @@ def createButtons(app):
     buttons["showhideslice"] = button("hideslices",app.uiWindow, [b,b+b+a],[a*5,a],
     'showHide(app.slicerender)',style,"SHOW/HIDE SLICES")
     buttons["export"] = button("export",app.uiWindow, [b,b+2*(b+a)],[a*5,a],
-    'export(app)',style,"EXPORT SLICES")
+    'export(app,app.fileExport)',style,"EXPORT SLICES")
 
     #2nd Column
     w=b*2+a*5
     buttons["incrh"] = button("incrh",app.uiWindow, [w,b],[a*5,a],
-    'incrx(app,.2)',app.styles["button2"],"INCREASE H")
+    'incrx(app,.1)',app.styles["button2"],"INCREASE H")
     buttons["decrh"] = button("decrh",app.uiWindow, [w,b+b+a],[a*5,a],
-    'incrx(app,-.2)',app.styles["button2"],"DECREASE H")
+    'incrx(app,-.1)',app.styles["button2"],"DECREASE H")
     buttons["reloadapp"] = button("reloadapp",app.uiWindow, [w,b+2*(b+a)],[a*5,a],
     'appStarted(app)',app.styles["button2"],"RESET")
 
@@ -103,7 +104,7 @@ def createButtons(app):
     buttons["loadNext"] = button("loadNext",app.uiWindow, [w,b],[a*5,a],
     'loadnextmesh(app)',app.styles["button2"],"LD NEXT MESH")
     buttons["loadCustom"] = button("loadCustom",app.uiWindow, [w,b+b+a],[a*5,a],
-    'loadnextmesh(app)',app.styles["button2"],"LD CUSTOM MESH")
+    'loadCustomMesh(app,customMesh)',app.styles["button2"],"LD CUSTOM MESH")
     buttons["help"] = button("help",app.uiWindow, [w,b+2*(b+a)],[a*5,a],
     'showInfo(app)',app.styles["button2"],"HELP INFO")
 
@@ -145,7 +146,7 @@ class UIobj(object):
         self.dims = dims
         self.clickEvents = []
         self.tags = tags
-        self.reScale = True
+        self.scaledims = True
 
     def getBounds(self, shape = "rectangle"):
         if shape == "rectangle":
@@ -158,7 +159,7 @@ class UIobj(object):
     def reScale(self,scale):
         for n in range(2):
             self.origin[n] *= scale[n]
-            if self.reScale:self.dims[n] *= scale[n]
+            if self.scaledims:self.dims[n] *= scale[n]
         self.resizeFont()
 
 
@@ -216,7 +217,7 @@ class button(UIobj):
         o = self.origin
         ext = [self.origin[0]+self.dims[0],self.origin[1]+self.dims[1]]
         if ((pt[0]>o[0]) and (pt[0]<ext[0])) and ((pt[1]>o[1]) and (pt[1]<ext[1])):
-            print(f'{self.name} pressed')
+            # print(f'{self.name} pressed')
             return True
         else:
             return False

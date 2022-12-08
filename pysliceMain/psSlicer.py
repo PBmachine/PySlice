@@ -89,9 +89,15 @@ class meshslices(object):
     
     def slice2data(self):
         for s in self.slices:
-            row = ['Slice',round(s.z,3)]
-            row.append(s.contour)
+            row = ['Slice Z:',round(s.z,3)]
+            if test:
+                for l in s.segments:
+                    p = np.round(l[0],4).tolist(),np.round(l[1],4).tolist()
+                    row.append(p)
+            else:
+                row.append(s.contour)
             self.data.append(row)
+        return self.data
         
 
 def slicebyZ(mesh, h):

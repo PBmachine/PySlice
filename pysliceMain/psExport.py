@@ -15,9 +15,9 @@ import csv
 
 class fileOutput(object):
     #file output - file suffix and save path
-    def __init__(self,filename,savepath,filetype):
+    def __init__(self,filename,filepath,filetype):
         self.filetype = filetype
-        self.savepath = savepath
+        self.filepath = filepath
         self.filename = filename
         self.header = []
         #

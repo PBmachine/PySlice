@@ -54,7 +54,7 @@ def loadButtons(app):
   
     app.buttons["export"].state = 0
     app.buttons["showhideslice"].state = 0
-    app.buttons["homeView"].scaledims = False
+
    
     for key in app.buttons:
         app.uiWindow.objs[app.buttons[key].name] = app.buttons[key]
@@ -146,7 +146,7 @@ def mouseReleased(app, event):
         app.infomode = False
         return
     if app.mouseCheck:
-        print(f'mouseReleased at {(event.x, event.y)}')
+        #print(f'mouseReleased at {(event.x, event.y)}')
         buttons = app.buttons
         pt = (event.x, event.y)
         app.mouseCheck = False

@@ -1,7 +1,7 @@
 # PySlice
- Python 3D printing slicer for 15112:
+ Python 3D printing slicer made for the 15112 project.
  This program loads and displays an STL mesh in 3D and allows the user to create 2d contour slices for creating "vase style" 3d printing paths
- This project is still in progress but is functional for loading and displaying slices on low poly stls. Improvements forthcoming!
+ Uses Tkinter and Numpy. Can display and slice (low poly) meshes for 3d printing toolpaths
  
 
 
